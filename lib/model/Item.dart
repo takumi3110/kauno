@@ -5,16 +5,20 @@ final dateFormatter = DateFormat('yyyy年M月d日');
 class Item {
   int? id;
   String category;
-  String title;
+  String name;
   DateTime date;
+  String shop;
+  int quantity;
   bool isFinished;
   bool isDeleted;
 
   Item({
     this.id,
     required this.category,
-    required this.title,
+    required this.name,
     required this.date,
+    this.shop = '',
+    this.quantity = 1,
     required this.isFinished,
     this.isDeleted = false
   });
@@ -23,8 +27,10 @@ class Item {
     return {
       'id': id,
       'category': category,
-      'title': title,
+      'name': name,
       'date': dateFormatter.format(date),
+      'shop': shop,
+      'quantity': quantity,
       'is_finished': isFinished ? 1: 0,
       'is_deleted': isDeleted ? 1: 0
     };
@@ -34,8 +40,10 @@ class Item {
     return Item(
       id: map['id'],
       category: map['category'],
-      title: map['title'],
+      name: map['title'],
       date: dateFormatter.parse(map['date']),
+      shop: map['shop'],
+      quantity: map['quantity'],
       isFinished: map['is_finished'] == 1,
       isDeleted: map['is_deleted'] == 1,
     );

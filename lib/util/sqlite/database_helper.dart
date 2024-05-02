@@ -37,7 +37,7 @@ class DatabaseHelper {
       throw Exception('プラットフォームが判別できませんでした。');
     }
 
-    final path = join(dbFilePath, 'todo.db');
+    final path = join(dbFilePath, 'kauno.db');
     return path;
   }
 
@@ -49,11 +49,13 @@ class DatabaseHelper {
         version:1,
         onCreate: (Database db, int version) async {
           await db.execute('''
-          CREATE TABLE todos(
+          CREATE TABLE items(
             id INTEGER PRIMARY KEY,
             category TEXT,
-            title TEXT,
+            name TEXT,
             date TEXT,
+            shop TEXT,
+            quantity INTEGER,
             is_finished INTEGER,
             is_deleted INTEGER
           );
@@ -65,18 +67,18 @@ class DatabaseHelper {
   // 全部取得
   Future<List<Map<String, dynamic>>> getAllData() async {
     final Database? db = await database;
-    return await db!.query('todos');
+    return await db!.query('items');
   }
 
   // 一部取得　日付
   Future<dynamic> getData(String date) async {
     final Database? db = await database;
-    List<Map<String, dynamic>> maps = await db!.query('todos', where: 'date = ?', whereArgs: [date]);
+    List<Map<String, dynamic>> maps = await db!.query('items', where: 'date = ?', whereArgs: [date]);
     List<Item> results = [];
     for (var map in maps) {
-      Item newTodo = Item.fromMap(map);
-      if (!newTodo.isDeleted) {
-        results.add(newTodo);
+      Item newItem = Item.fromMap(map);
+      if (!newItem.isDeleted) {
+        results.add(newItem);
       }
     }
     return results;
@@ -85,18 +87,18 @@ class DatabaseHelper {
   // 新規作成
   Future<void> insertData(Map<String, dynamic> data) async {
     final Database? db = await database;
-    await db!.insert('todos', data, conflictAlgorithm: ConflictAlgorithm.replace);
+    await db!.insert('items', data, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   // 更新してidを返す
   Future<int> updateData(int id, Map<String, dynamic> data) async {
     final Database? db = await database;
-    return await db!.update('todos', data, where: 'id = ?', whereArgs: [id]);
+    return await db!.update('items', data, where: 'id = ?', whereArgs: [id]);
   }
 
 //   削除してidを返す
   Future<int> deleteData(int id) async {
     final Database? db = await database;
-    return await db!.delete('todos', where: 'id = ?', whereArgs: [id]);
+    return await db!.delete('items', where: 'id = ?', whereArgs: [id]);
   }
 }

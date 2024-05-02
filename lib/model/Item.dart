@@ -2,7 +2,7 @@ import 'package:intl/intl.dart';
 
 final dateFormatter = DateFormat('yyyy年M月d日');
 
-class Todo {
+class Item {
   int? id;
   String category;
   String title;
@@ -10,7 +10,7 @@ class Todo {
   bool isFinished;
   bool isDeleted;
 
-  Todo({
+  Item({
     this.id,
     required this.category,
     required this.title,
@@ -30,8 +30,8 @@ class Todo {
     };
   }
 
-  factory Todo.fromMap(Map<String, dynamic> map) {
-    return Todo(
+  factory Item.fromMap(Map<String, dynamic> map) {
+    return Item(
       id: map['id'],
       category: map['category'],
       title: map['title'],

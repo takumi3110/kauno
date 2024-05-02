@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 import 'package:intl/intl.dart';
-import 'package:kauno/model/todo.dart';
-import 'package:kauno/util/database/todo_database.dart';
+import 'package:kauno/model/Item.dart';
+import 'package:kauno/util/sqlite/item_sqlite.dart';
 import 'package:kauno/util/widget_utils.dart';
 import 'package:kauno/view/screen.dart';
 
@@ -137,9 +137,9 @@ class _CreateListPageState extends State<CreateListPage> {
       floatingActionButton: FloatingActionButton(
           onPressed: () async {
             if (categoryController.text.isNotEmpty && itemControllers[0]['title'].text.isNotEmpty) {
-              List<Todo> newTodos = [];
+              List<Item> newTodos = [];
               for (var item in itemControllers) {
-                Todo newTodo = Todo(
+                Item newTodo = Item(
                     category: categoryController.text,
                     title: item['title'].text,
                     date: _selectedDate,
@@ -148,7 +148,7 @@ class _CreateListPageState extends State<CreateListPage> {
                 newTodos.add(newTodo);
               }
               if (newTodos.isNotEmpty) {
-                var result = await TodoDatabase.insertTodo(newTodos);
+                var result = await ItemSqlite.insertTodo(newTodos);
                 if (result == true) {
                   if (!context.mounted) return;
                   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Screen()));

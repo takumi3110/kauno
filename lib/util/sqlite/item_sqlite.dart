@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:kauno/database/database_helper.dart';
-import 'package:kauno/model/todo.dart';
+import 'package:kauno/model/Item.dart';
+import 'package:kauno/util/sqlite/database_helper.dart';
 
-class TodoDatabase {
+class ItemSqlite {
   static final DatabaseHelper databaseHelper = DatabaseHelper();
 
-  static Future<bool> insertTodo(List<Todo> newTodos) async {
+  static Future<bool> insertTodo(List<Item> newTodos) async {
     try {
       for (var newTodo in newTodos) {
         await databaseHelper.insertData(newTodo.toMap());
@@ -17,7 +17,7 @@ class TodoDatabase {
     }
   }
 
-  static Future<bool> updateTodo(Todo newTodo) async {
+  static Future<bool> updateTodo(Item newTodo) async {
     try {
       await databaseHelper.updateData(newTodo.id!, newTodo.toMap());
       debugPrint('Todo更新完了');

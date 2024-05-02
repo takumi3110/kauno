@@ -27,7 +27,7 @@ class _CreateListPageState extends State<CreateListPage> {
   void initState() {
     dateController.text = dateFormatter.format(_selectedDate);
     itemControllers.add({
-      'title': TextEditingController()
+      'name': TextEditingController()
     });
     super.initState();
   }
@@ -35,7 +35,6 @@ class _CreateListPageState extends State<CreateListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomSpace = MediaQuery.sizeOf(context).height;
     final minDate = DateTime(_selectedDate.year, _selectedDate.month, 1);
     final maxDate = DateTime(_selectedDate.year, _selectedDate.month + 1, 0);
 
@@ -104,18 +103,18 @@ class _CreateListPageState extends State<CreateListPage> {
                             child: Padding(
                               padding: const EdgeInsets.only(bottom: 10.0),
                               child: TextField(
-                                controller: itemControllers[index]['title'],
+                                controller: itemControllers[index]['name'],
                                 decoration: InputDecoration(
-                                    label: const Text('タイトル'),
+                                    label: const Text('商品名'),
                                     border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(10)
                                     )
                                 ),
                                 onSubmitted: (_) {
-                                  if (itemControllers.last['title'].text.isNotEmpty) {
+                                  if (itemControllers.last['name'].text.isNotEmpty) {
                                     setState(() {
                                       itemControllers.add({
-                                        'title': TextEditingController()
+                                        'name': TextEditingController()
                                       }
                                       );
                                     });
@@ -136,19 +135,19 @@ class _CreateListPageState extends State<CreateListPage> {
       ),
       floatingActionButton: FloatingActionButton(
           onPressed: () async {
-            if (categoryController.text.isNotEmpty && itemControllers[0]['title'].text.isNotEmpty) {
+            if (categoryController.text.isNotEmpty && itemControllers[0]['name'].text.isNotEmpty) {
               List<Item> newTodos = [];
               for (var item in itemControllers) {
                 Item newTodo = Item(
                     category: categoryController.text,
-                    title: item['title'].text,
+                    name: item['name'].text,
                     date: _selectedDate,
                     isFinished: false
                 );
                 newTodos.add(newTodo);
               }
               if (newTodos.isNotEmpty) {
-                var result = await ItemSqlite.insertTodo(newTodos);
+                var result = await ItemSqlite.insertItem(newTodos);
                 if (result == true) {
                   if (!context.mounted) return;
                   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Screen()));

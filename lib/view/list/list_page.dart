@@ -115,7 +115,7 @@ class _ListPageState extends State<ListPage> {
                                     ScaffoldMessenger.of(context)
                                         .showSnackBar(const SnackBar(content: Text('削除しました。')));
                                     todo.isDeleted = true;
-                                    var result = await ItemSqlite.updateTodo(todo);
+                                    var result = await ItemSqlite.updateItem(todo);
                                     if (result == true) {
                                       setState(() {
                                         todo.isDeleted = true;
@@ -132,7 +132,7 @@ class _ListPageState extends State<ListPage> {
                                   child: CheckboxListTile(
                                     activeColor: Colors.blue,
                                     title: Text(
-                                      todo.title,
+                                      todo.name,
                                       style: TextStyle(
                                           decoration:
                                           todo.isFinished ? TextDecoration.lineThrough : TextDecoration.none),
@@ -144,7 +144,7 @@ class _ListPageState extends State<ListPage> {
                                     onChanged: (bool? value) async {
                                       if (todo.isFinished != value) {
                                         todo.isFinished = value!;
-                                        var result = await ItemSqlite.updateTodo(todo);
+                                        var result = await ItemSqlite.updateItem(todo);
                                         if (result == true) {
                                           setState(() {
                                             todo.isFinished = value;
@@ -179,12 +179,12 @@ class _ListPageState extends State<ListPage> {
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
-                        Text('簡単作成', style: TextStyle(fontSize: 20),),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 20.0),
+                        const Text('簡単作成', style: TextStyle(fontSize: 20),),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20.0),
                           child: TextField(
                             decoration: InputDecoration(
-                                labelText: 'タイトル'
+                                labelText: '商品名'
                             ),
                           ),
                         ),

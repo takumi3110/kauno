@@ -5,36 +5,36 @@ import 'package:kauno/util/sqlite/database_helper.dart';
 class ItemSqlite {
   static final DatabaseHelper databaseHelper = DatabaseHelper();
 
-  static Future<bool> insertTodo(List<Item> newTodos) async {
+  static Future<bool> insertItem(List<Item> newItems) async {
     try {
-      for (var newTodo in newTodos) {
-        await databaseHelper.insertData(newTodo.toMap());
+      for (var newItem in newItems) {
+        await databaseHelper.insertData(newItem.toMap());
       }
       return true;
     } catch (e) {
-      debugPrint('Todo作成エラー: $e');
+      debugPrint('Item作成エラー: $e');
       return false;
     }
   }
 
-  static Future<bool> updateTodo(Item newTodo) async {
+  static Future<bool> updateItem(Item newItem) async {
     try {
-      await databaseHelper.updateData(newTodo.id!, newTodo.toMap());
-      debugPrint('Todo更新完了');
+      await databaseHelper.updateData(newItem.id!, newItem.toMap());
+      debugPrint('Item更新完了');
       return true;
     } catch (e) {
-      debugPrint('Todo更新エラー: $e');
+      debugPrint('Item更新エラー: $e');
       return false;
     }
   }
 
-  static Future<bool> deleteTodo(int todoId) async {
+  static Future<bool> deleteItem(int itemId) async {
     try {
-      await databaseHelper.deleteData(todoId);
-      debugPrint('Todo削除完了');
+      await databaseHelper.deleteData(itemId);
+      debugPrint('Item削除完了');
       return true;
     } catch (e) {
-      debugPrint('Todo削除エラー: $e');
+      debugPrint('Item削除エラー: $e');
       return false;
     }
   }

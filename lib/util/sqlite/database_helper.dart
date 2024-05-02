@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:kauno/model/todo.dart';
+import 'package:kauno/model/Item.dart';
 import 'package:sqflite/sqflite.dart';
 
 class DatabaseHelper {
@@ -72,9 +72,9 @@ class DatabaseHelper {
   Future<dynamic> getData(String date) async {
     final Database? db = await database;
     List<Map<String, dynamic>> maps = await db!.query('todos', where: 'date = ?', whereArgs: [date]);
-    List<Todo> results = [];
+    List<Item> results = [];
     for (var map in maps) {
-      Todo newTodo = Todo.fromMap(map);
+      Item newTodo = Item.fromMap(map);
       if (!newTodo.isDeleted) {
         results.add(newTodo);
       }

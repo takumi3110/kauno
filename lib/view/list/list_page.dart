@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:kauno/model/todo.dart';
-import 'package:kauno/util/database/todo_database.dart';
+import 'package:kauno/model/Item.dart';
+import 'package:kauno/util/sqlite/item_sqlite.dart';
 import 'package:kauno/util/widget_utils.dart';
 
 class ListPage extends StatefulWidget {
@@ -20,7 +20,7 @@ class _ListPageState extends State<ListPage> {
   DateTime _selectedData = DateTime.now();
 
   Stream getTodoStream(String date) async* {
-    yield await TodoDatabase.databaseHelper.getData(date);
+    yield await ItemSqlite.databaseHelper.getData(date);
   }
 
   @override
@@ -108,14 +108,14 @@ class _ListPageState extends State<ListPage> {
                           // shrinkWrap: true,
                             itemCount: snapshot.data!.length,
                             itemBuilder: (context, index) {
-                              Todo todo = snapshot.data![index];
+                              Item todo = snapshot.data![index];
                               return Dismissible(
                                 onDismissed: (DismissDirection direction) async {
                                   if (direction == DismissDirection.startToEnd) {
                                     ScaffoldMessenger.of(context)
                                         .showSnackBar(const SnackBar(content: Text('削除しました。')));
                                     todo.isDeleted = true;
-                                    var result = await TodoDatabase.updateTodo(todo);
+                                    var result = await ItemSqlite.updateTodo(todo);
                                     if (result == true) {
                                       setState(() {
                                         todo.isDeleted = true;
@@ -144,14 +144,14 @@ class _ListPageState extends State<ListPage> {
                                     onChanged: (bool? value) async {
                                       if (todo.isFinished != value) {
                                         todo.isFinished = value!;
-                                        var result = await TodoDatabase.updateTodo(todo);
+                                        var result = await ItemSqlite.updateTodo(todo);
                                         if (result == true) {
                                           setState(() {
                                             todo.isFinished = value;
                                           });
                                         }
                                       }
-                                      // await TodoDatabase.updateTodo(newTodo)
+                                      // await ItemSqlite.updateTodo(newTodo)
                                     },
                                   ),
                                 ),

@@ -189,34 +189,6 @@ class _ListPageState extends State<ListPage> {
             isScrollControlled: true,
               context: context,
               builder: (BuildContext context) {
-                // return DraggableScrollableSheet(
-                //   initialChildSize:1,
-                //   expand: false,
-                //   builder: (context, scrollController) {
-                //     return Padding(
-                //       padding: const EdgeInsets.all(20.0),
-                //       child: ListView(
-                //         shrinkWrap: true,
-                //         controller: scrollController,
-                //           children: [
-                //             Text('シンプル作成'),
-                //             Padding(
-                //               padding: const EdgeInsets.all(10.0),
-                //               child: TextField(
-                //                 decoration: InputDecoration(labelText: '商品名'),
-                //               ),
-                //             ),
-                //             ElevatedButton(
-                //                 onPressed: () {
-                //                   Navigator.pop(context);
-                //                 },
-                //                 child: const Text('登録')
-                //             )
-                //           ]
-                //       ),
-                //     );
-                //   },
-                // );
                 return Container(
                   height: 500,
                   padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 30),

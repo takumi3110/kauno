@@ -16,22 +16,20 @@ class CreateListPage extends StatefulWidget {
 class _CreateListPageState extends State<CreateListPage> {
   TextEditingController categoryController = TextEditingController();
   TextEditingController dateController = TextEditingController();
+  TextEditingController shopController = TextEditingController();
   List<Map<String, dynamic>> itemControllers = [];
 
   final dateFormatter = DateFormat('yyyy年M月d日');
   DateTime _selectedDate = DateTime.now();
 
-  bool _isLoading = false;
+  final List<int> quantityList = List.generate(10, (index) => index + 1);
 
   @override
   void initState() {
     dateController.text = dateFormatter.format(_selectedDate);
-    itemControllers.add({
-      'name': TextEditingController()
-    });
+    itemControllers.add({'name': TextEditingController(), 'quantity': TextEditingController()});
     super.initState();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -53,16 +51,8 @@ class _CreateListPageState extends State<CreateListPage> {
                     child: Column(
                       children: [
                         TextField(
-                          controller: categoryController,
-                          decoration: const InputDecoration(
-                              label: Text('カテゴリー')
-                          ),
-                        ),
-                        TextField(
                           controller: dateController,
-                          decoration: const InputDecoration(
-                              label: Text('日付')
-                          ),
+                          decoration: const InputDecoration(label: Text('日付')),
                           onTap: () {
                             FocusScope.of(context).requestFocus(FocusNode());
                             DatePicker.showDatePicker(
@@ -70,15 +60,21 @@ class _CreateListPageState extends State<CreateListPage> {
                                 context,
                                 showTitleActions: true,
                                 minTime: minDate,
-                                maxTime: maxDate,
-                                onConfirm: (DateTime date) {
-                                  dateController.text = dateFormatter.format(date);
-                                  setState(() {
-                                    _selectedDate = date;
-                                  });
-                                }
-                            );
+                                maxTime: maxDate, onConfirm: (DateTime date) {
+                              dateController.text = dateFormatter.format(date);
+                              setState(() {
+                                _selectedDate = date;
+                              });
+                            });
                           },
+                        ),
+                        TextField(
+                          controller: categoryController,
+                          decoration: const InputDecoration(label: Text('カテゴリー')),
+                        ),
+                        TextField(
+                          controller: shopController,
+                          decoration: const InputDecoration(label: Text('購入店舗')),
                         )
                       ],
                     ),
@@ -93,34 +89,73 @@ class _CreateListPageState extends State<CreateListPage> {
                       child: ListView.builder(
                         itemCount: itemControllers.length,
                         itemBuilder: (context, index) {
-                          return Dismissible(
-                            onDismissed: (direction) {
-                              setState(() {
-                                itemControllers.removeAt(index);
-                              });
-                            },
-                            key: UniqueKey(),
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 10.0),
-                              child: TextField(
-                                controller: itemControllers[index]['name'],
-                                decoration: InputDecoration(
-                                    label: const Text('商品名'),
-                                    border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10)
-                                    )
-                                ),
-                                onSubmitted: (_) {
-                                  if (itemControllers.last['name'].text.isNotEmpty) {
-                                    setState(() {
-                                      itemControllers.add({
-                                        'name': TextEditingController()
+                          final isLast = index != itemControllers.length - 1;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                SizedBox(
+                                  width: 200,
+                                  child: TextField(
+                                    controller: itemControllers[index]['name'],
+                                    decoration: const InputDecoration(
+                                      label: Text('商品名'),
+                                      // border: OutlineInputBorder(
+                                      //     borderRadius: BorderRadius.circular(10)
+                                      // )
+                                    ),
+                                    onSubmitted: (_) {
+                                      if (itemControllers.last['name'].text.isNotEmpty &&
+                                          itemControllers.last['quantity'].text.isNotEmpty) {
+                                        setState(() {
+                                          itemControllers.add(
+                                              {'name': TextEditingController(), 'quantity': TextEditingController()});
+                                        });
                                       }
-                                      );
+                                    },
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 60,
+                                  child: DropdownButtonFormField(
+                                      decoration: const InputDecoration(
+                                        label: Text('個数'),
+                                        // border: OutlineInputBorder(
+                                        //   borderRadius: BorderRadius.circular(10)
+                                        // )
+                                      ),
+                                      items: quantityList.map<DropdownMenuItem<int>>((int value) {
+                                        return DropdownMenuItem<int>(value: value, child: Text(value.toString()));
+                                      }).toList(),
+                                      onChanged: (int? value) {
+                                        itemControllers[index]['quantity'].text = value.toString();
+                                        setState(() {
+                                          if (itemControllers.last['name'].text.isNotEmpty &&
+                                              itemControllers.last['quantity'].text.isNotEmpty) {
+                                            itemControllers.add(
+                                                {'name': TextEditingController(), 'quantity': TextEditingController()});
+                                          }
+                                        });
+                                      }),
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      if (isLast) {
+                                        itemControllers.removeAt(index);
+                                      } else {
+                                        itemControllers.add({
+                                          'name': TextEditingController(),
+                                          'quantity': TextEditingController(),
+                                        });
+                                      }
                                     });
-                                  }
-                                },
-                              ),
+                                  },
+                                    child: Icon(isLast ? Icons.highlight_off: Icons.add, size: 20, color: Colors.blueGrey,)
+                                )
+                              ],
                             ),
                           );
                         },
@@ -135,16 +170,20 @@ class _CreateListPageState extends State<CreateListPage> {
       ),
       floatingActionButton: FloatingActionButton(
           onPressed: () async {
-            if (categoryController.text.isNotEmpty && itemControllers[0]['name'].text.isNotEmpty) {
+            if (categoryController.text.isNotEmpty) {
               List<Item> newTodos = [];
               for (var item in itemControllers) {
-                Item newTodo = Item(
-                    category: categoryController.text,
-                    name: item['name'].text,
-                    date: _selectedDate,
-                    isFinished: false
-                );
-                newTodos.add(newTodo);
+                if (item['name'].text.isNotEmpty && item['quantity'].text.isNotEmpty) {
+                  Item newTodo = Item(
+                      category: categoryController.text,
+                      shop: shopController.text,
+                      name: item['name'].text,
+                      quantity: int.parse(item['quantity'].text),
+                      date: _selectedDate,
+                      isFinished: false,
+                      isDeleted: false);
+                  newTodos.add(newTodo);
+                }
               }
               if (newTodos.isNotEmpty) {
                 var result = await ItemSqlite.insertItem(newTodos);
@@ -158,8 +197,7 @@ class _CreateListPageState extends State<CreateListPage> {
               }
             }
           },
-          child: const Text('登録')
-      ),
+          child: const Text('登録')),
     );
   }
 }

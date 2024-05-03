@@ -15,12 +15,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'kauno',
       theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo, brightness: Brightness.light),
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
           useMaterial3: true,
           scaffoldBackgroundColor: Colors.blueGrey[50]
       ),
       darkTheme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.black, brightness: Brightness.dark),
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.black,),
           useMaterial3: true,
           scaffoldBackgroundColor: Colors.grey[50]
       ),

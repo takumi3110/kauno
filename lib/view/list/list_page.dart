@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:kauno/model/Item.dart';
 import 'package:kauno/util/sqlite/item_sqlite.dart';
@@ -15,8 +17,12 @@ class ListPage extends StatefulWidget {
 }
 
 class _ListPageState extends State<ListPage> {
-  final dateFormatter = DateFormat('yyyy年M月d日');
+  TextEditingController itemNameController = TextEditingController();
+  TextEditingController itemQuantityController = TextEditingController();
 
+  final List<int> quantityList = List.generate(10, (index) => index + 1);
+
+  final dateFormatter = DateFormat('yyyy年M月d日');
   DateTime _selectedData = DateTime.now();
 
   Stream getTodoStream(String date) async* {
@@ -24,13 +30,9 @@ class _ListPageState extends State<ListPage> {
   }
 
   @override
-  void initState() {
-    // getTodoList(dateFormatter.format(DateTime.now()));
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final bottomSpace = MediaQuery.of(context).viewInsets.bottom;
+
     return Scaffold(
       appBar: WidgetUtils.createAppBar('リスト'),
       body: SafeArea(
@@ -105,49 +107,61 @@ class _ListPageState extends State<ListPage> {
                     builder: (context, snapshot) {
                       if (snapshot.hasData && snapshot.data!.length > 0) {
                         return ListView.builder(
-                          // shrinkWrap: true,
+                            // shrinkWrap: true,
                             itemCount: snapshot.data!.length,
                             itemBuilder: (context, index) {
-                              Item todo = snapshot.data![index];
+                              Item item = snapshot.data![index];
                               return Dismissible(
                                 onDismissed: (DismissDirection direction) async {
                                   if (direction == DismissDirection.startToEnd) {
                                     ScaffoldMessenger.of(context)
                                         .showSnackBar(const SnackBar(content: Text('削除しました。')));
-                                    todo.isDeleted = true;
-                                    var result = await ItemSqlite.updateItem(todo);
+                                    item.isDeleted = true;
+                                    var result = await ItemSqlite.updateItem(item);
                                     if (result == true) {
                                       setState(() {
-                                        todo.isDeleted = true;
+                                        item.isDeleted = true;
                                       });
                                     }
                                   }
                                   debugPrint('dismissed');
                                 },
-                                direction: todo.isFinished ? DismissDirection.startToEnd : DismissDirection.none,
+                                direction: item.isFinished ? DismissDirection.startToEnd : DismissDirection.none,
                                 key: UniqueKey(),
                                 child: Card(
                                   margin: const EdgeInsets.symmetric(vertical: 5),
                                   color: Colors.white,
                                   child: CheckboxListTile(
                                     activeColor: Colors.blue,
-                                    title: Text(
-                                      todo.name,
-                                      style: TextStyle(
-                                          decoration:
-                                          todo.isFinished ? TextDecoration.lineThrough : TextDecoration.none),
+                                    title: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          item.name,
+                                          style: TextStyle(
+                                              color: item.isFinished ? Colors.grey: Colors.black,
+                                              decoration:
+                                                  item.isFinished ? TextDecoration.lineThrough : TextDecoration.none),
+                                        ),
+                                        Text(
+                                          '${item.quantity} 個',
+                                          style: TextStyle(
+                                            color: item.isFinished ? Colors.grey: Colors.black
+                                          ),
+                                        )
+                                      ],
                                     ),
                                     controlAffinity: ListTileControlAffinity.leading,
-                                    value: todo.isFinished,
+                                    value: item.isFinished,
                                     shape: const RoundedRectangleBorder(
                                         borderRadius: BorderRadius.all(Radius.circular(10))),
                                     onChanged: (bool? value) async {
-                                      if (todo.isFinished != value) {
-                                        todo.isFinished = value!;
-                                        var result = await ItemSqlite.updateItem(todo);
+                                      if (item.isFinished != value) {
+                                        item.isFinished = value!;
+                                        var result = await ItemSqlite.updateItem(item);
                                         if (result == true) {
                                           setState(() {
-                                            todo.isFinished = value;
+                                            item.isFinished = value;
                                           });
                                         }
                                       }
@@ -170,27 +184,106 @@ class _ListPageState extends State<ListPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async{
+        onPressed: () async {
           await showModalBottomSheet(
+            isScrollControlled: true,
               context: context,
               builder: (BuildContext context) {
+                // return DraggableScrollableSheet(
+                //   initialChildSize:1,
+                //   expand: false,
+                //   builder: (context, scrollController) {
+                //     return Padding(
+                //       padding: const EdgeInsets.all(20.0),
+                //       child: ListView(
+                //         shrinkWrap: true,
+                //         controller: scrollController,
+                //           children: [
+                //             Text('シンプル作成'),
+                //             Padding(
+                //               padding: const EdgeInsets.all(10.0),
+                //               child: TextField(
+                //                 decoration: InputDecoration(labelText: '商品名'),
+                //               ),
+                //             ),
+                //             ElevatedButton(
+                //                 onPressed: () {
+                //                   Navigator.pop(context);
+                //                 },
+                //                 child: const Text('登録')
+                //             )
+                //           ]
+                //       ),
+                //     );
+                //   },
+                // );
                 return Container(
-                    height: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      children: [
-                        const Text('簡単作成', style: TextStyle(fontSize: 20),),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20.0),
-                          child: TextField(
-                            decoration: InputDecoration(
-                                labelText: '商品名'
+                  height: 500,
+                  padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 30),
+                  child: Column(
+                    children: [
+                      const Text('シンプル作成'),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            SizedBox(
+                              width: 200,
+                              child: TextField(
+                                controller: itemNameController,
+                                decoration: const InputDecoration(
+                                  labelText: '商品名'
+                                ),
+                              ),
                             ),
-                          ),
+                            SizedBox(
+                              width: 80,
+                              child: DropdownButtonFormField(
+                                  items: quantityList.map<DropdownMenuItem<int>>((int value) {
+                                    return DropdownMenuItem<int>(value: value, child: Text(value.toString()));
+                                  }).toList(),
+                                  onChanged: (int? value) {
+                                    itemQuantityController.text = value.toString();
+                                  }
+                              ),
+                            )
+                          ],
                         ),
-                        ElevatedButton(onPressed: () {}, child: const Text('登録'))
-                      ],
-                    )
+                      ),
+                      if (bottomSpace == 0)
+                      ElevatedButton(
+                          onPressed: () async{
+                            if (itemNameController.text.isNotEmpty && itemQuantityController.text.isNotEmpty) {
+                              Item newItem = Item(
+                                category: 'なし',
+                                name: itemNameController.text,
+                                quantity: int.parse(itemQuantityController.text),
+                                date: _selectedData,
+                                shop: '',
+                                isFinished: false,
+                                isDeleted: false
+                              );
+                              var result = await ItemSqlite.insertItem([newItem]);
+                              if (result == true) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('リストを登録しました。')));
+                                setState(() {
+                                  itemNameController.text = '';
+                                });
+                              } else {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('リストの登録に失敗しました。')));
+                              }
+                            }
+                            if (!context.mounted) return;
+                            Navigator.pop(context);
+                          },
+                          child: const Text('登録')
+                      )
+                    ],
+                  ),
                 );
               });
         },

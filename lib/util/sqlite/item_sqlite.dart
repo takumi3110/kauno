@@ -10,6 +10,7 @@ class ItemSqlite {
       for (var newItem in newItems) {
         await databaseHelper.insertData(newItem.toMap());
       }
+      debugPrint('Item作成完了');
       return true;
     } catch (e) {
       debugPrint('Item作成エラー: $e');

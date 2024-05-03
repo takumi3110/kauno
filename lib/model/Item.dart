@@ -6,9 +6,9 @@ class Item {
   int? id;
   String category;
   String name;
+  int quantity;
   DateTime date;
   String shop;
-  int quantity;
   bool isFinished;
   bool isDeleted;
 
@@ -40,7 +40,7 @@ class Item {
     return Item(
       id: map['id'],
       category: map['category'],
-      name: map['title'],
+      name: map['name'],
       date: dateFormatter.parse(map['date']),
       shop: map['shop'],
       quantity: map['quantity'],

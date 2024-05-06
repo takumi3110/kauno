@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kauno/model/Item.dart';
 
 class WidgetUtils {
   static AppBar createAppBar(String title) {
@@ -9,4 +10,5 @@ class WidgetUtils {
       elevation: 1,
     );
   }
+
 }

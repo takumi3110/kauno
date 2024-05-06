@@ -49,3 +49,14 @@ class Item {
     );
   }
 }
+
+class DeletedItem {
+  DateTime date;
+  List<Item> items;
+
+  DeletedItem({
+    required this.date,
+    required this.items,
+});
+
+}

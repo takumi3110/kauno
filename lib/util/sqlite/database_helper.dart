@@ -81,6 +81,28 @@ class DatabaseHelper {
         results.add(newItem);
       }
     }
+    results.sort((a, b) => b.id! - a.id!);
+    return results;
+  }
+
+  Future<dynamic> getDeletedData() async {
+    final Database? db = await database;
+    List<Map<String, dynamic>> maps = await db!.query('items', where: 'is_deleted = ?', whereArgs: [1]);
+    List<DeletedItem> results = [];
+    for (var map in maps) {
+      Item getItem = Item.fromMap(map);
+      if (results.isEmpty) {
+        results.add(DeletedItem(date: getItem.date, items: [getItem]));
+      } else {
+        if (results.any((result) => result.date.isAtSameMomentAs(getItem.date))) {
+          final index = results.indexWhere((result) => result.date == getItem.date);
+          results[index].items.add(getItem);
+        } else {
+          results.add(DeletedItem(date: getItem.date, items: [getItem]));
+        }
+      }
+    }
+    results.sort((a, b) => 1);
     return results;
   }
 

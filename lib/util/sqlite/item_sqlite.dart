@@ -5,6 +5,14 @@ import 'package:kauno/util/sqlite/database_helper.dart';
 class ItemSqlite {
   static final DatabaseHelper databaseHelper = DatabaseHelper();
 
+  static Stream getItemStream(String date) async* {
+    yield await databaseHelper.getData(date);
+  }
+
+  static Stream getDeletedItemStream() async* {
+    yield await databaseHelper.getDeletedData();
+  }
+
   static Future<bool> insertItem(List<Item> newItems) async {
     try {
       for (var newItem in newItems) {
@@ -29,9 +37,11 @@ class ItemSqlite {
     }
   }
 
-  static Future<bool> deleteItem(int itemId) async {
+  static Future<bool> deleteItems(List<int> itemIds) async {
     try {
-      await databaseHelper.deleteData(itemId);
+      for (var itemId in itemIds) {
+        await databaseHelper.deleteData(itemId);
+      }
       debugPrint('Item削除完了');
       return true;
     } catch (e) {

@@ -141,20 +141,23 @@ class _CreateListPageState extends State<CreateListPage> {
                                       }),
                                 ),
                                 GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      if (isLast) {
-                                        itemControllers.removeAt(index);
-                                      } else {
-                                        itemControllers.add({
-                                          'name': TextEditingController(),
-                                          'quantity': TextEditingController(),
-                                        });
-                                      }
-                                    });
-                                  },
-                                    child: Icon(isLast ? Icons.highlight_off: Icons.add, size: 20, color: Colors.blueGrey,)
-                                )
+                                    onTap: () {
+                                      setState(() {
+                                        if (isLast) {
+                                          itemControllers.removeAt(index);
+                                        } else {
+                                          itemControllers.add({
+                                            'name': TextEditingController(),
+                                            'quantity': TextEditingController(),
+                                          });
+                                        }
+                                      });
+                                    },
+                                    child: Icon(
+                                      isLast ? Icons.highlight_off : Icons.add,
+                                      size: 20,
+                                      color: Colors.blueGrey,
+                                    ))
                               ],
                             ),
                           );
@@ -170,30 +173,28 @@ class _CreateListPageState extends State<CreateListPage> {
       ),
       floatingActionButton: FloatingActionButton(
           onPressed: () async {
-            if (categoryController.text.isNotEmpty) {
-              List<Item> newTodos = [];
-              for (var item in itemControllers) {
-                if (item['name'].text.isNotEmpty && item['quantity'].text.isNotEmpty) {
-                  Item newTodo = Item(
-                      category: categoryController.text,
-                      shop: shopController.text,
-                      name: item['name'].text,
-                      quantity: int.parse(item['quantity'].text),
-                      date: _selectedDate,
-                      isFinished: false,
-                      isDeleted: false);
-                  newTodos.add(newTodo);
-                }
+            List<Item> newTodos = [];
+            for (var item in itemControllers) {
+              if (item['name'].text.isNotEmpty && item['quantity'].text.isNotEmpty) {
+                Item newTodo = Item(
+                    category: categoryController.text,
+                    shop: shopController.text,
+                    name: item['name'].text,
+                    quantity: int.parse(item['quantity'].text),
+                    date: _selectedDate,
+                    isFinished: false,
+                    isDeleted: false);
+                newTodos.add(newTodo);
               }
-              if (newTodos.isNotEmpty) {
-                var result = await ItemSqlite.insertItem(newTodos);
-                if (result == true) {
-                  if (!context.mounted) return;
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Screen()));
-                } else {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('登録に失敗しました。')));
-                }
+            }
+            if (newTodos.isNotEmpty) {
+              var result = await ItemSqlite.insertItem(newTodos);
+              if (result == true) {
+                if (!context.mounted) return;
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Screen()));
+              } else {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('登録に失敗しました。')));
               }
             }
           },

@@ -23,11 +23,10 @@ class _ListPageState extends State<ListPage> {
   final List<int> quantityList = List.generate(10, (index) => index + 1);
 
   final dateFormatter = DateFormat('yyyy年M月d日');
-  DateTime _selectedData = DateTime.now();
+  final _today = DateTime.now();
+  DateTime _selectedDate = DateTime.now();
 
-  Stream getTodoStream(String date) async* {
-    yield await ItemSqlite.databaseHelper.getData(date);
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +36,7 @@ class _ListPageState extends State<ListPage> {
       appBar: WidgetUtils.createAppBar('リスト'),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -47,8 +46,8 @@ class _ListPageState extends State<ListPage> {
                   GestureDetector(
                       onTap: () {
                         setState(() {
-                          DateTime newDate = _selectedData.subtract(const Duration(days: 1));
-                          _selectedData = newDate;
+                          DateTime newDate = _selectedDate.subtract(const Duration(days: 1));
+                          _selectedDate = newDate;
                           // getTodoList(dateFormatter.format(newDate));
                         });
                       },
@@ -56,19 +55,19 @@ class _ListPageState extends State<ListPage> {
                   GestureDetector(
                       onTap: () {
                         setState(() {
-                          _selectedData = DateTime.now();
+                          _selectedDate = _today;
                         });
-                        // getTodoList(dateFormatter.format(DateTime.now()));
+                        // getTodoList(dateFormatter.format(_today));
                       },
                       child: Text(
-                        dateFormatter.format(_selectedData),
+                        dateFormatter.format(_selectedDate),
                         style: const TextStyle(fontSize: 18),
                       )),
                   GestureDetector(
                       onTap: () {
                         setState(() {
-                          DateTime newDate = _selectedData.add(const Duration(days: 1));
-                          _selectedData = newDate;
+                          DateTime newDate = _selectedDate.add(const Duration(days: 1));
+                          _selectedDate = newDate;
                           // getTodoList(dateFormatter.format(newDate));
                         });
                       },
@@ -76,7 +75,7 @@ class _ListPageState extends State<ListPage> {
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                padding: const EdgeInsets.only(top: 10),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -95,15 +94,85 @@ class _ListPageState extends State<ListPage> {
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
                                 setState(() {
-                                  _selectedData = DateTime.now();
+                                  _selectedDate = _today;
                                 });
                               })),
                   ],
                 ),
               ),
+              if (dateFormatter.format(_selectedDate) == dateFormatter.format(_today) || _today.isBefore(_selectedDate))
+              // if (_today.isBefore(_selectedDate))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        SizedBox(
+                          width: 180,
+                          child: TextField(
+                            controller: itemNameController,
+                            decoration: const InputDecoration(
+                                labelText: '商品名'
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                          child: SizedBox(
+                            width: 80,
+                            child: DropdownButtonFormField(
+                              decoration: const InputDecoration(
+                                labelText: '個数'
+                              ),
+                                items: quantityList.map<DropdownMenuItem<int>>((int value) {
+                                  return DropdownMenuItem<int>(value: value, child: Text(value.toString()));
+                                }).toList(),
+                                onChanged: (int? value) {
+                                  itemQuantityController.text = value.toString();
+                                }
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    GestureDetector(
+                      onTap: () async{
+                        if (itemNameController.text.isNotEmpty && itemQuantityController.text.isNotEmpty) {
+                          Item newItem = Item(
+                              category: 'なし',
+                              name: itemNameController.text,
+                              quantity: int.parse(itemQuantityController.text),
+                              date: _selectedDate,
+                              shop: '',
+                              isFinished: false,
+                              isDeleted: false
+                          );
+                          var result = await ItemSqlite.insertItem([newItem]);
+                          if (result == true) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('リストを登録しました。')));
+                            setState(() {
+                              itemNameController.text = '';
+                              // itemQuantityController.text = '';
+                            });
+                          } else {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('リストの登録に失敗しました。')));
+                          }
+                        }
+                      },
+                      child: Icon(Icons.add_circle, color: Colors.blue, size: 30),
+                    )
+                  ],
+                ),
+              ),
               Expanded(
                 child: StreamBuilder(
-                    stream: getTodoStream(dateFormatter.format(_selectedData)),
+                    stream: ItemSqlite.getItemStream(dateFormatter.format(_selectedDate)),
                     builder: (context, snapshot) {
                       if (snapshot.hasData && snapshot.data!.length > 0) {
                         return ListView.builder(
@@ -141,12 +210,12 @@ class _ListPageState extends State<ListPage> {
                                           style: TextStyle(
                                               color: item.isFinished ? Colors.grey: Colors.black,
                                               decoration:
-                                                  item.isFinished ? TextDecoration.lineThrough : TextDecoration.none),
+                                              item.isFinished ? TextDecoration.lineThrough : TextDecoration.none),
                                         ),
                                         Text(
                                           '${item.quantity} 個',
                                           style: TextStyle(
-                                            color: item.isFinished ? Colors.grey: Colors.black
+                                              color: item.isFinished ? Colors.grey: Colors.black
                                           ),
                                         )
                                       ],
@@ -183,84 +252,84 @@ class _ListPageState extends State<ListPage> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          await showModalBottomSheet(
-            isScrollControlled: true,
-              context: context,
-              builder: (BuildContext context) {
-                return Container(
-                  height: 500,
-                  padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 30),
-                  child: Column(
-                    children: [
-                      const Text('シンプル作成'),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            SizedBox(
-                              width: 200,
-                              child: TextField(
-                                controller: itemNameController,
-                                decoration: const InputDecoration(
-                                  labelText: '商品名'
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              width: 80,
-                              child: DropdownButtonFormField(
-                                  items: quantityList.map<DropdownMenuItem<int>>((int value) {
-                                    return DropdownMenuItem<int>(value: value, child: Text(value.toString()));
-                                  }).toList(),
-                                  onChanged: (int? value) {
-                                    itemQuantityController.text = value.toString();
-                                  }
-                              ),
-                            )
-                          ],
-                        ),
-                      ),
-                      if (bottomSpace == 0)
-                      ElevatedButton(
-                          onPressed: () async{
-                            if (itemNameController.text.isNotEmpty && itemQuantityController.text.isNotEmpty) {
-                              Item newItem = Item(
-                                category: 'なし',
-                                name: itemNameController.text,
-                                quantity: int.parse(itemQuantityController.text),
-                                date: _selectedData,
-                                shop: '',
-                                isFinished: false,
-                                isDeleted: false
-                              );
-                              var result = await ItemSqlite.insertItem([newItem]);
-                              if (result == true) {
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('リストを登録しました。')));
-                                setState(() {
-                                  itemNameController.text = '';
-                                });
-                              } else {
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('リストの登録に失敗しました。')));
-                              }
-                            }
-                            if (!context.mounted) return;
-                            Navigator.pop(context);
-                          },
-                          child: const Text('登録')
-                      )
-                    ],
-                  ),
-                );
-              });
-        },
-        child: const Icon(Icons.add),
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: () async {
+      //     await showModalBottomSheet(
+      //       isScrollControlled: true,
+      //         context: context,
+      //         builder: (BuildContext context) {
+      //           return Container(
+      //             height: 500,
+      //             padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 30),
+      //             child: Column(
+      //               children: [
+      //                 const Text('シンプル作成'),
+      //                 Padding(
+      //                   padding: const EdgeInsets.symmetric(vertical: 20.0),
+      //                   child: Row(
+      //                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      //                     crossAxisAlignment: CrossAxisAlignment.end,
+      //                     children: [
+      //                       SizedBox(
+      //                         width: 200,
+      //                         child: TextField(
+      //                           controller: itemNameController,
+      //                           decoration: const InputDecoration(
+      //                             labelText: '商品名'
+      //                           ),
+      //                         ),
+      //                       ),
+      //                       SizedBox(
+      //                         width: 80,
+      //                         child: DropdownButtonFormField(
+      //                             items: quantityList.map<DropdownMenuItem<int>>((int value) {
+      //                               return DropdownMenuItem<int>(value: value, child: Text(value.toString()));
+      //                             }).toList(),
+      //                             onChanged: (int? value) {
+      //                               itemQuantityController.text = value.toString();
+      //                             }
+      //                         ),
+      //                       )
+      //                     ],
+      //                   ),
+      //                 ),
+      //                 if (bottomSpace == 0)
+      //                 ElevatedButton(
+      //                     onPressed: () async{
+      //                       if (itemNameController.text.isNotEmpty && itemQuantityController.text.isNotEmpty) {
+      //                         Item newItem = Item(
+      //                           category: 'なし',
+      //                           name: itemNameController.text,
+      //                           quantity: int.parse(itemQuantityController.text),
+      //                           date: _selectedData,
+      //                           shop: '',
+      //                           isFinished: false,
+      //                           isDeleted: false
+      //                         );
+      //                         var result = await ItemSqlite.insertItem([newItem]);
+      //                         if (result == true) {
+      //                           if (!context.mounted) return;
+      //                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('リストを登録しました。')));
+      //                           setState(() {
+      //                             itemNameController.text = '';
+      //                           });
+      //                         } else {
+      //                           if (!context.mounted) return;
+      //                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('リストの登録に失敗しました。')));
+      //                         }
+      //                       }
+      //                       if (!context.mounted) return;
+      //                       Navigator.pop(context);
+      //                     },
+      //                     child: const Text('登録')
+      //                 )
+      //               ],
+      //             ),
+      //           );
+      //         });
+      //   },
+      //   child: const Icon(Icons.add),
+      // ),
     );
   }
 }

@@ -60,6 +60,12 @@ class DatabaseHelper {
             is_deleted INTEGER
           );
           ''');
+          await db.execute('''
+          CREATE TABLE categories(
+            id INTEGER PRIMARY KEY,
+            name TEXT
+          );
+          ''');
         }
     );
   }

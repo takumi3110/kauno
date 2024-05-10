@@ -1,11 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:kauno/model/Item.dart';
 import 'package:kauno/model/category.dart';
+import 'package:kauno/util/function_utils.dart';
 import 'package:kauno/util/sqlite/item_sqlite.dart';
 import 'package:kauno/util/widget_utils.dart';
 
@@ -67,7 +66,7 @@ class _ListPageState extends State<ListPage> {
                       child: const Icon(Icons.chevron_left)),
                   Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
                     Text(
-                      dateFormatter.format(_selectedDate),
+                      '${dateFormatter.format(_selectedDate)}(${FunctionUtils.formatWeekday(_selectedDate.weekday)})',
                       style: const TextStyle(fontSize: 18),
                     ),
                     if (!_selectedDate.isAtSameMomentAs(_today))

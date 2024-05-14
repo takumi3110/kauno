@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:kauno/model/Item.dart';
-import 'package:kauno/model/category.dart';
+import 'package:kauno/model/item.dart';
+import 'package:kauno/model/item_category.dart';
 import 'package:kauno/util/function_utils.dart';
-import 'package:kauno/util/sqlite/item_sqlite.dart';
+import 'package:kauno/util/localstore/category_localstore.dart';
+import 'package:kauno/util/localstore/item_localstore.dart';
 import 'package:kauno/util/widget_utils.dart';
 
 class ListPage extends StatefulWidget {
@@ -19,21 +23,46 @@ class _ListPageState extends State<ListPage> {
   TextEditingController itemNameController = TextEditingController();
   TextEditingController itemQuantityController = TextEditingController();
   TextEditingController categoryController = TextEditingController();
+  TextEditingController priceController = TextEditingController();
+  StreamSubscription<Map<String, dynamic>>? _itemSubscription;
+  StreamSubscription<Map<String, dynamic>>? _categorySubscription;
+  final _items = <String, Item>{};
 
   final List<int> quantityList = List.generate(10, (index) => index + 1);
 
+  final numberFormatter = NumberFormat('#,###');
   final dateFormatter = DateFormat('yyyy年M月d日');
   final _today = DateTime.now();
   DateTime _selectedDate = DateTime.now();
 
-  final List<Category> categoryList = [
-    Category(name: 'すべて'),
+  final List<ItemCategory> categoryList = [
+    ItemCategory(name: 'すべて'),
   ];
 
   int _selectCategoryIndex = 0;
 
   @override
   void initState() {
+    _itemSubscription = ItemLocalStore.itemCollection.stream.listen((event) {
+      if (mounted) {
+        setState(() {
+          final item = Item.fromMap(event);
+          if (!item.isDeleted) {
+            _items.putIfAbsent(item.id!, () => item);
+          }
+        });
+      }
+      if (kIsWeb) ItemLocalStore.itemCollection.stream.asBroadcastStream();
+    });
+    _categorySubscription = CategoryLocalStore.categoryCollection.stream.listen((event) {
+      if (mounted) {
+        setState(() {
+          final category = ItemCategory.fromMap(event);
+          categoryList.add(category);
+        });
+      }
+      if (kIsWeb) CategoryLocalStore.categoryCollection.stream.asBroadcastStream();
+    });
     super.initState();
   }
 
@@ -170,12 +199,22 @@ class _ListPageState extends State<ListPage> {
                                       padding: const EdgeInsets.symmetric(vertical: 10),
                                       alignment: Alignment.centerRight,
                                       child: ElevatedButton(
-                                          onPressed: () {
+                                          onPressed: () async{
                                             if(categoryController.text.isNotEmpty) {
-                                              setState(() {
-                                                categoryList.add(Category(name: categoryController.text));
-                                              });
+                                                // save category
+                                                final id = CategoryLocalStore.categoryCollection.doc().id;
+                                                ItemCategory newCategory = ItemCategory(
+                                                  id: id,
+                                                    name: categoryController.text
+                                                );
+                                                var result = await newCategory.save();
+                                                if (result == true) {
+                                                  setState(() {
+                                                    categoryList.add(ItemCategory(name: categoryController.text));
+                                                  });
+                                                }
                                             }
+                                            if (!context.mounted) return;
                                             Navigator.pop(context);
                                           },
                                           child: Text(
@@ -222,11 +261,18 @@ class _ListPageState extends State<ListPage> {
                           ),
                           CupertinoDialogAction(
                               child: const Text('OK'),
-                            onPressed: () {
-                              setState(() {
-                                categoryList.removeAt(_selectCategoryIndex);
-                              });
-                                Navigator.pop(context);
+                            onPressed: () async {
+                                var result = await categoryList[_selectCategoryIndex].delete();
+                                if (result == true) {
+                                  setState(() {
+                                    categoryList.removeAt(_selectCategoryIndex);
+                                  });
+                                  if (!context.mounted) return;
+                                  Navigator.pop(context);
+                                } else {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('エラーがあり削除できませんでした。')));
+                                }
                             },
                           ),
 
@@ -238,28 +284,35 @@ class _ListPageState extends State<ListPage> {
               ),
               const SizedBox(height: 20,),
               Expanded(
-                child: StreamBuilder(
-                    stream: ItemSqlite.getItemStream(dateFormatter.format(_selectedDate)),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        return IndexedStack(
-                          index: _selectCategoryIndex,
-                          children: List.generate(categoryList.length, (index) {
-                            switch(_selectCategoryIndex) {
-                              case 0:
-                                return itemListView(snapshot.data);
-                              default:
-                                List<Item> filteredItems = snapshot.data.where((Item data) => data.category == categoryList[index].name).toList();
-                                return itemListView(filteredItems);
+                child: IndexedStack(
+                    index: _selectCategoryIndex,
+                    children: List.generate(categoryList.length, (index) {
+                      switch(index) {
+                        case 0:
+                          var filterItems = <String, Item>{};
+                          _items.forEach((key, value) {
+                            DateTime date = value.date;
+                            DateTime formatSelectedDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+                            if (date.isAtSameMomentAs(formatSelectedDate)) {
+                              filterItems.putIfAbsent(key, () => value);
                             }
-                          })
-                        );
-                      } else {
-                        return const Center(
-                          child: Text('登録がありません。'),
-                        );
+                          });
+                          return itemListView(filterItems);
+                        default:
+                          var filterItems = <String, Item>{};
+                          _items.forEach((key, value) {
+                            DateTime date = value.date;
+                            DateTime formatSelectedDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+                            if (date.isAtSameMomentAs(formatSelectedDate) && value.category == categoryList[index].name) {
+                              filterItems.putIfAbsent(key, () => value);
+                            }
+                          });
+                          return itemListView(filterItems);
+                      // List<Item> filteredItems = snapshot.data.where((Item data) => data.category == categoryList[index].name).toList();
+                      // return itemListView(filteredItems);
                       }
                     })
+                ),
               ),
             ],
           ),
@@ -276,7 +329,7 @@ class _ListPageState extends State<ListPage> {
                   padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 30),
                   child: Column(
                     children: [
-                      const Text('簡単作成'),
+                      // const Text('簡単作成'),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 20),
                         child: Column(
@@ -293,15 +346,18 @@ class _ListPageState extends State<ListPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                SizedBox(
-                                  width: 150,
-                                  child: TextField(
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(
-                                      labelText: '価格',
-                                      suffix: Text('円')
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 10),
+                                    child: TextField(
+                                      controller: priceController,
+                                      keyboardType: TextInputType.number,
+                                      decoration: const InputDecoration(
+                                        labelText: '価格',
+                                        suffix: Text('円')
+                                      ),
                                     ),
-                                  )
+                                  ),
                                 ),
                                 SizedBox(
                                   width: 100,
@@ -329,22 +385,27 @@ class _ListPageState extends State<ListPage> {
                         child: ElevatedButton(
                             onPressed: () async{
                               if (itemNameController.text.isNotEmpty && itemQuantityController.text.isNotEmpty) {
+                                final id = ItemLocalStore.itemCollection.doc().id;
                                 Item newItem = Item(
+                                  id: id,
                                   // TODO: _selectedCategoryIndexでcategoryを指定
                                   category: 'なし',
                                   name: itemNameController.text,
+                                  price: int.parse(priceController.text),
                                   quantity: int.parse(itemQuantityController.text),
                                   date: _selectedDate,
                                   shop: '',
                                   isFinished: false,
                                   isDeleted: false
                                 );
-                                var result = await ItemSqlite.insertItem([newItem]);
+                                var result = await newItem.save();
                                 if (result == true) {
+                                  _items.putIfAbsent(newItem.id!, () => newItem);
                                   if (!context.mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('リストを登録しました。')));
                                   setState(() {
                                     itemNameController.text = '';
+                                    priceController.text = '';
                                   });
                                 } else {
                                   if (!context.mounted) return;
@@ -367,24 +428,27 @@ class _ListPageState extends State<ListPage> {
     );
   }
 
-  Widget itemListView(List<Item> items) {
+  Widget itemListView(Map<String, Item> items) {
     if (items.isNotEmpty) {
       return ListView.builder(
         // shrinkWrap: true,
-          itemCount: items.length,
+          itemCount: items.keys.length,
           itemBuilder: (context, index) {
-            Item item = items[index];
+            final key = items.keys.elementAt(index);
+            final item = items[key]!;
             return Dismissible(
               onDismissed: (DismissDirection direction) async {
                 if (direction == DismissDirection.startToEnd) {
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(const SnackBar(content: Text('削除しました。')));
                   item.isDeleted = true;
-                  var result = await ItemSqlite.updateItem(item);
+                  // TODO: delete
+                  var result = await item.save();
                   if (result == true) {
                     setState(() {
-                      item.isDeleted = true;
+                      _items.remove(item.id);
                     });
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(const SnackBar(content: Text('削除しました。')));
                   }
                 }
                 debugPrint('dismissed');
@@ -412,17 +476,23 @@ class _ListPageState extends State<ListPage> {
                       )
                     ],
                   ),
+                  subtitle: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(item.shop),
+                      Text('${numberFormatter.format(item.price)} 円')
+                    ],
+                  ),
                   controlAffinity: ListTileControlAffinity.leading,
                   value: item.isFinished,
                   shape: const RoundedRectangleBorder(
                       borderRadius: BorderRadius.all(Radius.circular(10))),
                   onChanged: (bool? value) async {
                     if (item.isFinished != value) {
-                      item.isFinished = value!;
-                      var result = await ItemSqlite.updateItem(item);
+                      var result = await item.save();
                       if (result == true) {
                         setState(() {
-                          item.isFinished = value;
+                          item.isFinished = value!;
                         });
                       }
                     }
@@ -439,5 +509,12 @@ class _ListPageState extends State<ListPage> {
       );
     }
 
+  }
+
+  @override
+  void dispose() {
+    if (_itemSubscription != null) _itemSubscription?.cancel();
+    if (_categorySubscription != null) _categorySubscription?.cancel();
+    super.dispose();
   }
 }

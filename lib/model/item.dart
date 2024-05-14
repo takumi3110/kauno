@@ -1,11 +1,15 @@
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:kauno/util/localstore/item_localstore.dart';
+import 'package:localstore/localstore.dart';
 
 final dateFormatter = DateFormat('yyyy年M月d日');
 
 class Item {
-  int? id;
+  String? id;
   String category;
   String name;
+  int price;
   int quantity;
   DateTime date;
   String shop;
@@ -13,9 +17,10 @@ class Item {
   bool isDeleted;
 
   Item({
-    this.id,
+    this.id = '',
     required this.category,
     required this.name,
+    this.price = 0,
     required this.date,
     this.shop = '',
     this.quantity = 1,
@@ -28,6 +33,7 @@ class Item {
       'id': id,
       'category': category,
       'name': name,
+      'price': price,
       'date': dateFormatter.format(date),
       'shop': shop,
       'quantity': quantity,
@@ -41,12 +47,35 @@ class Item {
       id: map['id'],
       category: map['category'],
       name: map['name'],
+      price: map['price'],
       date: dateFormatter.parse(map['date']),
       shop: map['shop'],
       quantity: map['quantity'],
       isFinished: map['is_finished'] == 1,
       isDeleted: map['is_deleted'] == 1,
     );
+  }
+}
+
+extension ExtItem on Item {
+  Future save() async {
+    try {
+      await ItemLocalStore.itemCollection.doc(id).set(toMap());
+      return true;
+    } catch (e) {
+      debugPrint('item登録エラー: $e' );
+      return false;
+    }
+  }
+
+  Future delete() async {
+    try {
+      await ItemLocalStore.itemCollection.doc(id).delete();
+      return true;
+    } catch (e) {
+      debugPrint('item削除エラー: $e');
+      return false;
+    }
   }
 }
 

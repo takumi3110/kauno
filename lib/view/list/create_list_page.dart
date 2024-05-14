@@ -1,8 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 import 'package:intl/intl.dart';
-import 'package:kauno/model/Item.dart';
-import 'package:kauno/util/sqlite/item_sqlite.dart';
+import 'package:kauno/model/item.dart';
+import 'package:kauno/model/item_category.dart';
 import 'package:kauno/util/widget_utils.dart';
 import 'package:kauno/view/screen.dart';
 
@@ -18,6 +19,10 @@ class _CreateListPageState extends State<CreateListPage> {
   TextEditingController dateController = TextEditingController();
   TextEditingController shopController = TextEditingController();
   List<Map<String, dynamic>> itemControllers = [];
+
+  final List<ItemCategory> categoryList = [
+    ItemCategory(name: '食料'),
+  ];
 
   final dateFormatter = DateFormat('yyyy年M月d日');
   DateTime _selectedDate = DateTime.now();
@@ -37,7 +42,7 @@ class _CreateListPageState extends State<CreateListPage> {
     final maxDate = DateTime(_selectedDate.year, _selectedDate.month + 1, 0);
 
     return Scaffold(
-      appBar: WidgetUtils.createAppBar('リスト作成'),
+      appBar: WidgetUtils.createAppBar('まとめて作成'),
       body: SafeArea(
         child: Stack(
           children: [
@@ -68,14 +73,55 @@ class _CreateListPageState extends State<CreateListPage> {
                             });
                           },
                         ),
-                        TextField(
-                          controller: categoryController,
-                          decoration: const InputDecoration(label: Text('カテゴリー')),
+                        Row(
+                          children: [
+                            // Expanded(
+                            //   child: DropdownButtonFormField(
+                            //     padding: const EdgeInsets.only(right: 10),
+                            //     decoration: const InputDecoration(
+                            //       labelText: 'カテゴリー'
+                            //     ),
+                            //       items: categoryList.map<DropdownMenuItem<Category>>((Category value)  =>
+                            //           DropdownMenuItem(value: value,child: Text(value.name),)).toList(),
+                            //       onChanged: (Category? value) {
+                            //         categoryController.text = value!.name;
+                            //       }
+                            //   ),
+                            // ),
+                            Expanded(
+                              child: DropdownMenu(
+                                requestFocusOnTap: true,
+                                enableSearch: true,
+                                enableFilter: true,
+                                inputDecorationTheme: InputDecorationTheme(
+                                  border: UnderlineInputBorder()
+                                ),
+                                label: const Text('カテゴリー', style: TextStyle(fontSize: 14),),
+                                  dropdownMenuEntries: categoryList.map<DropdownMenuEntry<ItemCategory>>((ItemCategory value) {
+                                    return DropdownMenuEntry<ItemCategory>(
+                                        value: value,
+                                        label: value.name,
+                                    );
+                                  }).toList(),
+                                  onSelected: (ItemCategory? value) {
+                                  setState(() {
+                                    if (value != null) {
+                                      categoryController.text = value.name;
+                                    }
+                                  });
+                                  },
+                              ),
+                            ),
+
+                            Expanded(
+                              child: TextField(
+                                controller: shopController,
+                                decoration: const InputDecoration(label: Text('購入店舗')),
+                              ),
+                            )
+                          ],
                         ),
-                        TextField(
-                          controller: shopController,
-                          decoration: const InputDecoration(label: Text('購入店舗')),
-                        )
+
                       ],
                     ),
                   ),
@@ -171,34 +217,34 @@ class _CreateListPageState extends State<CreateListPage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-          onPressed: () async {
-            List<Item> newTodos = [];
-            for (var item in itemControllers) {
-              if (item['name'].text.isNotEmpty && item['quantity'].text.isNotEmpty) {
-                Item newTodo = Item(
-                    category: categoryController.text,
-                    shop: shopController.text,
-                    name: item['name'].text,
-                    quantity: int.parse(item['quantity'].text),
-                    date: _selectedDate,
-                    isFinished: false,
-                    isDeleted: false);
-                newTodos.add(newTodo);
-              }
-            }
-            if (newTodos.isNotEmpty) {
-              var result = await ItemSqlite.insertItem(newTodos);
-              if (result == true) {
-                if (!context.mounted) return;
-                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Screen()));
-              } else {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('登録に失敗しました。')));
-              }
-            }
-          },
-          child: const Text('登録')),
+      // floatingActionButton: FloatingActionButton(
+      //     onPressed: () async {
+      //       List<Item> newTodos = [];
+      //       for (var item in itemControllers) {
+      //         if (item['name'].text.isNotEmpty && item['quantity'].text.isNotEmpty) {
+      //           Item newTodo = Item(
+      //               category: categoryController.text,
+      //               shop: shopController.text,
+      //               name: item['name'].text,
+      //               quantity: int.parse(item['quantity'].text),
+      //               date: _selectedDate,
+      //               isFinished: false,
+      //               isDeleted: false);
+      //           newTodos.add(newTodo);
+      //         }
+      //       }
+      //       if (newTodos.isNotEmpty) {
+      //         var result = await ItemSqlite.insertItem(newTodos);
+      //         if (result == true) {
+      //           if (!context.mounted) return;
+      //           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Screen()));
+      //         } else {
+      //           if (!context.mounted) return;
+      //           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('登録に失敗しました。')));
+      //         }
+      //       }
+      //     },
+      //     child: const Text('登録')),
     );
   }
 }

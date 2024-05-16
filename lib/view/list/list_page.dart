@@ -48,7 +48,10 @@ class _ListPageState extends State<ListPage> {
         setState(() {
           final item = Item.fromMap(event);
           if (!item.isDeleted) {
-            _items.putIfAbsent(item.id!, () => item);
+            setState(() {
+              _items.putIfAbsent(item.id!, () => item);
+            });
+
           }
         });
       }
@@ -61,7 +64,7 @@ class _ListPageState extends State<ListPage> {
           categoryList.add(category);
         });
       }
-      if (kIsWeb) CategoryLocalStore.categoryCollection.stream.asBroadcastStream();
+      // if (kIsWeb) CategoryLocalStore.categoryCollection.stream.asBroadcastStream();
     });
     super.initState();
   }
@@ -124,45 +127,51 @@ class _ListPageState extends State<ListPage> {
                 ],
               ),
               Container(
+                height: 40,
                 decoration: const BoxDecoration(
                     border: Border(bottom: BorderSide(color: Colors.grey))
                 ),
-                child:Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: List.generate(categoryList.length, (index) {
-                        return InkWell(
-                          borderRadius: BorderRadius.circular(50),
-                          onTap: () {
-                            setState(() {
-                              _selectCategoryIndex = index;
-                            });
-                          },
-                          child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                // border: Border(bottom: BorderSide(color: _selectCategoryIndex == index ? Colors.blue: Colors.grey))
-                                  border: Border(
-                                      bottom: _selectCategoryIndex == index ? const BorderSide(color: Colors.blue): BorderSide.none
+                    Expanded(
+                      child: ListView.builder(
+                          // shrinkWrap: true,
+                          scrollDirection: Axis.horizontal,
+                          itemCount: categoryList.length,
+                          itemBuilder: (context, index) {
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(50),
+                              onTap: () {
+                                setState(() {
+                                  _selectCategoryIndex = index;
+                                });
+                              },
+                              child: Container(
+                                  // width: 100,
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    // border: Border(bottom: BorderSide(color: _selectCategoryIndex == index ? Colors.blue: Colors.grey))
+                                      border: Border(
+                                          bottom: _selectCategoryIndex == index ? const BorderSide(color: Colors.blue): BorderSide.none
+                                      )
+                                  ),
+                                  child: Text(
+                                    categoryList[index].name,
+                                    style: TextStyle(
+                                      color: _selectCategoryIndex == index ? Colors.blue: Colors.black,
+                                    ),
                                   )
                               ),
-                              child: Text(
-                                categoryList[index].name,
-                                style: TextStyle(
-                                    color: _selectCategoryIndex == index ? Colors.blue: Colors.black
-                                ),
-                              )
-                          ),
-                        );
-                      }),
+                            );
+                          }),
+
                     ),
                     InkWell(
                       borderRadius: BorderRadius.circular(50),
                       onTap: () async{
                         await showModalBottomSheet(
-                          backgroundColor: Colors.white,
+                            backgroundColor: Colors.white,
                             isScrollControlled: true,
                             context: context,
                             builder: (BuildContext context) {
@@ -201,24 +210,24 @@ class _ListPageState extends State<ListPage> {
                                       child: ElevatedButton(
                                           onPressed: () async{
                                             if(categoryController.text.isNotEmpty) {
-                                                // save category
-                                                final id = CategoryLocalStore.categoryCollection.doc().id;
-                                                ItemCategory newCategory = ItemCategory(
+                                              // save category
+                                              final id = CategoryLocalStore.categoryCollection.doc().id;
+                                              ItemCategory newCategory = ItemCategory(
                                                   id: id,
-                                                    name: categoryController.text
-                                                );
-                                                var result = await newCategory.save();
-                                                if (result == true) {
-                                                  setState(() {
-                                                    categoryList.add(ItemCategory(name: categoryController.text));
-                                                  });
-                                                }
+                                                  name: categoryController.text
+                                              );
+                                              await newCategory.save();
+                                              // if (result == true) {
+                                              //   setState(() {
+                                              //     categoryList.add(ItemCategory(name: categoryController.text));
+                                              //   });
+                                              // }
                                             }
                                             if (!context.mounted) return;
                                             Navigator.pop(context);
                                           },
                                           child: Text(
-                                            categoryController.text.isNotEmpty ? '登録': '閉じる'
+                                              categoryController.text.isNotEmpty ? '登録': '閉じる'
                                           )
                                       ),
                                     )
@@ -232,85 +241,60 @@ class _ListPageState extends State<ListPage> {
                         padding: EdgeInsets.all(10),
                         child: Icon(Icons.add, size: 20,),
                       ),
-                    )
+                    ),
+                    InkWell(
+                        borderRadius: BorderRadius.circular(50),
+                        onTap: () {
+                          if (_selectCategoryIndex > 0) {
+                            showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return CupertinoAlertDialog(
+                                    title: const Text('このカテゴリーを削除しますか？', style: TextStyle(fontSize: 14),),
+                                    content: Text(
+                                      '【${categoryList[_selectCategoryIndex].name}】が削除されますが、登録されているアイテムは削除されません。',
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                    actions: [
+                                      CupertinoDialogAction(
+                                        isDestructiveAction: true,
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text('キャンセル'),
+                                      ),
+                                      CupertinoDialogAction(
+                                        child: const Text('OK'),
+                                        onPressed: () async {
+                                          var result = await categoryList[_selectCategoryIndex].delete();
+                                          if (result == true) {
+                                            // setState(() {
+                                            //   categoryList.removeAt(_selectCategoryIndex);
+                                            // });
+                                            if (!context.mounted) return;
+                                            Navigator.pop(context);
+                                          } else {
+                                            if (!context.mounted) return;
+                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('エラーがあり削除できませんでした。')));
+                                          }
+                                        },
+                                      ),
+
+                                    ],
+                                  );
+                                });
+                          }
+                        },
+                        child: Icon(Icons.delete_forever, color: _selectCategoryIndex == 0 ? Colors.grey[400]: Colors.grey[700], size: 26,)),
                   ],
                 ),
               ),
-              if(_selectCategoryIndex != 0)
-              Align(
-                alignment: Alignment.topRight,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(50),
-                  onTap: () {
-                    showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                      return CupertinoAlertDialog(
-                        title: const Text('このカテゴリーを削除しますか？', style: TextStyle(fontSize: 14),),
-                        content: Text(
-                            '【${categoryList[_selectCategoryIndex].name}】が削除されますが、登録されているアイテムは削除されません。',
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                        actions: [
-                          CupertinoDialogAction(
-                            isDestructiveAction: true,
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text('キャンセル'),
-                          ),
-                          CupertinoDialogAction(
-                              child: const Text('OK'),
-                            onPressed: () async {
-                                var result = await categoryList[_selectCategoryIndex].delete();
-                                if (result == true) {
-                                  setState(() {
-                                    categoryList.removeAt(_selectCategoryIndex);
-                                  });
-                                  if (!context.mounted) return;
-                                  Navigator.pop(context);
-                                } else {
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('エラーがあり削除できませんでした。')));
-                                }
-                            },
-                          ),
-
-                        ],
-                      );
-                    });
-                  },
-                    child: const Icon(Icons.delete_forever, color: Colors.blueGrey, size: 26,)),
-              ),
-              const SizedBox(height: 20,),
               Expanded(
                 child: IndexedStack(
                     index: _selectCategoryIndex,
                     children: List.generate(categoryList.length, (index) {
-                      switch(index) {
-                        case 0:
-                          var filterItems = <String, Item>{};
-                          _items.forEach((key, value) {
-                            DateTime date = value.date;
-                            DateTime formatSelectedDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
-                            if (date.isAtSameMomentAs(formatSelectedDate)) {
-                              filterItems.putIfAbsent(key, () => value);
-                            }
-                          });
-                          return itemListView(filterItems);
-                        default:
-                          var filterItems = <String, Item>{};
-                          _items.forEach((key, value) {
-                            DateTime date = value.date;
-                            DateTime formatSelectedDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
-                            if (date.isAtSameMomentAs(formatSelectedDate) && value.category == categoryList[index].name) {
-                              filterItems.putIfAbsent(key, () => value);
-                            }
-                          });
-                          return itemListView(filterItems);
-                      // List<Item> filteredItems = snapshot.data.where((Item data) => data.category == categoryList[index].name).toList();
-                      // return itemListView(filteredItems);
-                      }
+                      String? categoryName = index > 0 ? categoryList[index].name: null;
+                          return itemListView(categoryName);
                     })
                 ),
               ),
@@ -329,7 +313,19 @@ class _ListPageState extends State<ListPage> {
                   padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 30),
                   child: Column(
                     children: [
-                      // const Text('簡単作成'),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const SizedBox(),
+                          const Text('商品登録', style: TextStyle(fontSize: 20)),
+                          InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                            },
+                            child: const Icon(Icons.close, color: Colors.grey,),
+                          )
+                        ],
+                      ),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 20),
                         child: Column(
@@ -385,11 +381,12 @@ class _ListPageState extends State<ListPage> {
                         child: ElevatedButton(
                             onPressed: () async{
                               if (itemNameController.text.isNotEmpty && itemQuantityController.text.isNotEmpty) {
+                                // _selectedCategoryIndexでcategoryを指定
+                                final category = _selectCategoryIndex == 0 ? 'なし': categoryList[_selectCategoryIndex].name;
                                 final id = ItemLocalStore.itemCollection.doc().id;
                                 Item newItem = Item(
                                   id: id,
-                                  // TODO: _selectedCategoryIndexでcategoryを指定
-                                  category: 'なし',
+                                  category: category,
                                   name: itemNameController.text,
                                   price: int.parse(priceController.text),
                                   quantity: int.parse(itemQuantityController.text),
@@ -400,10 +397,10 @@ class _ListPageState extends State<ListPage> {
                                 );
                                 var result = await newItem.save();
                                 if (result == true) {
-                                  _items.putIfAbsent(newItem.id!, () => newItem);
                                   if (!context.mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('リストを登録しました。')));
                                   setState(() {
+                                    // _items.putIfAbsent(newItem.id!, () => newItem);
                                     itemNameController.text = '';
                                     priceController.text = '';
                                   });
@@ -415,7 +412,7 @@ class _ListPageState extends State<ListPage> {
                               if (!context.mounted) return;
                               Navigator.pop(context);
                             },
-                            child: const Text('登録')
+                            child: itemNameController.text.isNotEmpty ? const Text('登録'): const Text('閉じる')
                         ),
                       )
                     ],
@@ -428,87 +425,118 @@ class _ListPageState extends State<ListPage> {
     );
   }
 
-  Widget itemListView(Map<String, Item> items) {
-    if (items.isNotEmpty) {
-      return ListView.builder(
-        // shrinkWrap: true,
-          itemCount: items.keys.length,
-          itemBuilder: (context, index) {
-            final key = items.keys.elementAt(index);
-            final item = items[key]!;
-            return Dismissible(
-              onDismissed: (DismissDirection direction) async {
-                if (direction == DismissDirection.startToEnd) {
-                  item.isDeleted = true;
-                  // TODO: delete
-                  var result = await item.save();
-                  if (result == true) {
-                    setState(() {
-                      _items.remove(item.id);
-                    });
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(const SnackBar(content: Text('削除しました。')));
-                  }
-                }
-                debugPrint('dismissed');
-              },
-              direction: item.isFinished ? DismissDirection.startToEnd : DismissDirection.none,
-              key: UniqueKey(),
-              child: Card(
-                margin: const EdgeInsets.symmetric(vertical: 5),
-                color: Colors.white,
-                child: CheckboxListTile(
-                  activeColor: Colors.blue,
-                  title: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        item.name,
-                        style: TextStyle(
-                            color: item.isFinished ? Colors.grey : Colors.black,
-                            decoration:
-                            item.isFinished ? TextDecoration.lineThrough : TextDecoration.none),
-                      ),
-                      Text(
-                        '${item.quantity} 個',
-                        style: TextStyle(color: item.isFinished ? Colors.grey : Colors.black),
-                      )
-                    ],
-                  ),
-                  subtitle: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Text(item.shop),
-                      Text('${numberFormatter.format(item.price)} 円')
-                    ],
-                  ),
-                  controlAffinity: ListTileControlAffinity.leading,
-                  value: item.isFinished,
-                  shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(10))),
-                  onChanged: (bool? value) async {
-                    if (item.isFinished != value) {
+  Widget itemListView(String? categoryName) {
+    List<Item> items = [];
+    var total = 0;
+    DateTime formatSelectedDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    if (categoryName != null) {
+      final filter = _items.values.where((item) => item.category == categoryName && item.date.isAtSameMomentAs(formatSelectedDate)).toList();
+      items = filter;
+    } else {
+      final filter = _items.values.where((item) => item.date.isAtSameMomentAs(formatSelectedDate)).toList();
+      items = filter;
+    }
+    for (var item in items) {
+      total += item.price * item.quantity;
+    }
+
+    return Column(
+      children: [
+        Container(
+          alignment: Alignment.centerRight,
+          margin: const EdgeInsets.symmetric(vertical: 5),
+          child: Text('合計金額: ${numberFormatter.format(total)} 円'),
+        ),
+        if (items.isNotEmpty)
+        Expanded(
+          child: ListView.builder(
+            // shrinkWrap: true,
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final item = items[index];
+                return Dismissible(
+                  onDismissed: (DismissDirection direction) async {
+                    if (direction == DismissDirection.startToEnd) {
+                      item.isDeleted = true;
+                      // TODO: delete
                       var result = await item.save();
                       if (result == true) {
                         setState(() {
-                          item.isFinished = value!;
+                          _items.remove(item.id);
                         });
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(const SnackBar(content: Text('削除しました。')));
                       }
                     }
-                    // await ItemSqlite.updateTodo(newTodo)
+                    debugPrint('dismissed');
                   },
-                ),
-              ),
-            );
-          });
-    } else {
-      return const Align(
-        alignment: Alignment.topCenter,
-        child: Text('登録がありません。'),
-      );
-    }
-
+                  direction: item.isFinished ? DismissDirection.startToEnd : DismissDirection.none,
+                  key: UniqueKey(),
+                  child: Card(
+                    margin: const EdgeInsets.symmetric(vertical: 5),
+                    color: Colors.white,
+                    child: CheckboxListTile(
+                      activeColor: Colors.blue,
+                      title: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            item.name,
+                            style: TextStyle(
+                                color: item.isFinished ? Colors.grey : Colors.black,
+                                decoration:
+                                item.isFinished ? TextDecoration.lineThrough : TextDecoration.none),
+                          ),
+                          Text(
+                            '${item.quantity} 個',
+                            style: TextStyle(color: item.isFinished ? Colors.grey : Colors.black),
+                          )
+                        ],
+                      ),
+                      subtitle: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              if (item.shop.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 5.0),
+                                  child: Text(item.shop, style: const TextStyle(fontSize: 12),),
+                                ),
+                              Text(item.category, style: const TextStyle(fontSize: 12),)
+                            ],
+                          ),
+                          Text('${numberFormatter.format(item.price)} 円', style: const TextStyle(fontSize: 12),)
+                        ],
+                      ),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      value: item.isFinished,
+                      shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(10))),
+                      onChanged: (bool? value) async {
+                        if (item.isFinished != value) {
+                          var result = await item.save();
+                          if (result == true) {
+                            setState(() {
+                              item.isFinished = value!;
+                            });
+                          }
+                        }
+                        // await ItemSqlite.updateTodo(newTodo)
+                      },
+                    ),
+                  ),
+                );
+              }),
+        ),
+        if (items.isEmpty)
+          const Align(
+            alignment: Alignment.topCenter,
+            child: Text('登録がありません。'),
+          )
+      ],
+    );
   }
 
   @override

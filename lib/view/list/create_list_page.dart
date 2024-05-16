@@ -1,11 +1,8 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 import 'package:intl/intl.dart';
-import 'package:kauno/model/item.dart';
 import 'package:kauno/model/item_category.dart';
 import 'package:kauno/util/widget_utils.dart';
-import 'package:kauno/view/screen.dart';
 
 class CreateListPage extends StatefulWidget {
   const CreateListPage({super.key});
@@ -93,7 +90,7 @@ class _CreateListPageState extends State<CreateListPage> {
                                 requestFocusOnTap: true,
                                 enableSearch: true,
                                 enableFilter: true,
-                                inputDecorationTheme: InputDecorationTheme(
+                                inputDecorationTheme: const InputDecorationTheme(
                                   border: UnderlineInputBorder()
                                 ),
                                 label: const Text('カテゴリー', style: TextStyle(fontSize: 14),),

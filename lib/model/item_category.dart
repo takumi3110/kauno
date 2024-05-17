@@ -1,7 +1,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:kauno/util/localstore/category_localstore.dart';
-import 'package:localstore/localstore.dart';
 
 class ItemCategory {
   String id;
@@ -22,7 +21,7 @@ class ItemCategory {
 }
 
 extension ExtItemCategory on ItemCategory {
-  Future save() async {
+  Future<bool> save() async {
     try {
       await CategoryLocalStore.categoryCollection.doc(id).set(toMap());
       return true;
@@ -32,7 +31,7 @@ extension ExtItemCategory on ItemCategory {
     }
   }
 
-  Future delete() async {
+  Future<bool> delete() async {
     try {
       await CategoryLocalStore.categoryCollection.doc(id).delete();
       return true;

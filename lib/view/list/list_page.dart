@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -41,6 +40,25 @@ class _ListPageState extends State<ListPage> {
 
   int _selectCategoryIndex = 0;
 
+  Future<bool> deleteCategory() async {
+    try {
+      final items = _items.values.where((item) => item.category == categoryList[_selectCategoryIndex].name);
+      for (var item in items) {
+        item.category = null;
+        await item.save();
+      }
+      await categoryList[_selectCategoryIndex].delete();
+      setState(() {
+        categoryList.removeAt(_selectCategoryIndex);
+        _selectCategoryIndex = 0;
+      });
+       return true;
+    } catch (e) {
+      debugPrint('カテゴリー削除エラー: $e');
+      return false;
+    }
+  }
+
   @override
   void initState() {
     _itemSubscription = ItemLocalStore.itemCollection.stream.listen((event) {
@@ -51,11 +69,10 @@ class _ListPageState extends State<ListPage> {
             setState(() {
               _items.putIfAbsent(item.id!, () => item);
             });
-
           }
         });
       }
-      if (kIsWeb) ItemLocalStore.itemCollection.stream.asBroadcastStream();
+      // if (kIsWeb) ItemLocalStore.itemCollection.stream.asBroadcastStream();
     });
     _categorySubscription = CategoryLocalStore.categoryCollection.stream.listen((event) {
       if (mounted) {
@@ -165,7 +182,6 @@ class _ListPageState extends State<ListPage> {
                               ),
                             );
                           }),
-
                     ),
                     InkWell(
                       borderRadius: BorderRadius.circular(50),
@@ -217,11 +233,6 @@ class _ListPageState extends State<ListPage> {
                                                   name: categoryController.text
                                               );
                                               await newCategory.save();
-                                              // if (result == true) {
-                                              //   setState(() {
-                                              //     categoryList.add(ItemCategory(name: categoryController.text));
-                                              //   });
-                                              // }
                                             }
                                             if (!context.mounted) return;
                                             Navigator.pop(context);
@@ -266,11 +277,8 @@ class _ListPageState extends State<ListPage> {
                                       CupertinoDialogAction(
                                         child: const Text('OK'),
                                         onPressed: () async {
-                                          var result = await categoryList[_selectCategoryIndex].delete();
+                                          var result = await deleteCategory();
                                           if (result == true) {
-                                            // setState(() {
-                                            //   categoryList.removeAt(_selectCategoryIndex);
-                                            // });
                                             if (!context.mounted) return;
                                             Navigator.pop(context);
                                           } else {
@@ -382,7 +390,7 @@ class _ListPageState extends State<ListPage> {
                             onPressed: () async{
                               if (itemNameController.text.isNotEmpty && itemQuantityController.text.isNotEmpty) {
                                 // _selectedCategoryIndexでcategoryを指定
-                                final category = _selectCategoryIndex == 0 ? 'なし': categoryList[_selectCategoryIndex].name;
+                                final category = _selectCategoryIndex == 0 ? null : categoryList[_selectCategoryIndex].name;
                                 final id = ItemLocalStore.itemCollection.doc().id;
                                 Item newItem = Item(
                                   id: id,
@@ -504,7 +512,7 @@ class _ListPageState extends State<ListPage> {
                                   padding: const EdgeInsets.only(right: 5.0),
                                   child: Text(item.shop, style: const TextStyle(fontSize: 12),),
                                 ),
-                              Text(item.category, style: const TextStyle(fontSize: 12),)
+                              Text(item.category != null ? item.category!: 'カテゴリーなし', style: const TextStyle(fontSize: 12),)
                             ],
                           ),
                           Text('${numberFormatter.format(item.price)} 円', style: const TextStyle(fontSize: 12),)

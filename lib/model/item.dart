@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kauno/util/localstore/item_localstore.dart';
-import 'package:localstore/localstore.dart';
 
 final dateFormatter = DateFormat('yyyy年M月d日');
 
 class Item {
   String? id;
-  String category;
+  String? category;
   String name;
   int price;
   int quantity;
@@ -18,7 +17,7 @@ class Item {
 
   Item({
     this.id = '',
-    required this.category,
+    this.category,
     required this.name,
     this.price = 0,
     required this.date,

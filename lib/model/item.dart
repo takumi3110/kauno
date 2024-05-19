@@ -73,7 +73,7 @@ extension ExtItem on Item {
       return true;
     } catch (e) {
       debugPrint('item削除エラー: $e');
-      return false;
+      return throw Error();
     }
   }
 }

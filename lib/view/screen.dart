@@ -13,7 +13,7 @@ class Screen extends StatefulWidget {
 
 class _ScreenState extends State<Screen> {
   int selectedIndex = 0;
-  List<Widget> pageList = [const ListPage(), const CreateListPage(), const TrashedPage()];
+  List<Widget> pageList = [const ListPage(), const TrashedPage()];
 
 
   @override
@@ -25,7 +25,6 @@ class _ScreenState extends State<Screen> {
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.list), label: 'リスト'),
-          BottomNavigationBarItem(icon: Icon(Icons.playlist_add), label: '作成'),
           BottomNavigationBarItem(icon: Icon(Icons.delete), label: '削除済み')
         ],
         currentIndex: selectedIndex,

@@ -61,16 +61,12 @@ class _ListPageState extends State<ListPage> {
 
   @override
   void initState() {
-    _itemSubscription = ItemLocalStore.itemCollection.stream.listen((event) {
+    _itemSubscription = ItemLocalStore.itemCollection.stream.where((event) => !Item.fromMap(event).isDeleted).listen((event) {
       if (mounted) {
-        setState(() {
           final item = Item.fromMap(event);
-          if (!item.isDeleted) {
             setState(() {
               _items.putIfAbsent(item.id!, () => item);
             });
-          }
-        });
       }
       // if (kIsWeb) ItemLocalStore.itemCollection.stream.asBroadcastStream();
     });
@@ -396,7 +392,7 @@ class _ListPageState extends State<ListPage> {
                                   id: id,
                                   category: category,
                                   name: itemNameController.text,
-                                  price: int.parse(priceController.text),
+                                  price: priceController.text.isNotEmpty ? int.parse(priceController.text): 0,
                                   quantity: int.parse(itemQuantityController.text),
                                   date: _selectedDate,
                                   shop: '',

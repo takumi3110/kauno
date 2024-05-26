@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:kauno/model/item.dart';
 
 class WidgetUtils {
   static AppBar createAppBar(String title) {
@@ -8,6 +7,7 @@ class WidgetUtils {
       backgroundColor: Colors.white,
       shadowColor: Colors.black,
       elevation: 1,
+      automaticallyImplyLeading: false,
     );
   }
 

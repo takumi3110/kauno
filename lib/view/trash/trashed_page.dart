@@ -184,7 +184,7 @@ class _TrashedPageState extends State<TrashedPage> {
                                 key: Key(item.id!.toString()),
                                 direction: DismissDirection.startToEnd,
                                 background: Container(
-                                  alignment: Alignment.centerRight,
+                                  alignment: Alignment.centerLeft,
                                   child: const Row(
                                     children: [Icon(Icons.refresh), Text('元に戻す')],
                                   ),

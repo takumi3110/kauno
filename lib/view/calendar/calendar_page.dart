@@ -17,7 +17,7 @@ class _CalendarPageState extends State<CalendarPage> {
   List<CalendarEvent> events = [];
   List<Item> items = [];
   StreamSubscription<Map<String, dynamic>>? _itemSubscription;
-  final _items = <String, Item> {};
+  final _items = <String, Item>{};
 
   List<CalendarEvent> createEvents() {
     List<CalendarEvent> events = [];
@@ -34,20 +34,21 @@ class _CalendarPageState extends State<CalendarPage> {
   @override
   void initState() {
     _itemSubscription =
-        ItemLocalStore.itemCollection.stream.where((event) => !Item.fromMap(event).isDeleted).listen((event) {
-      if (mounted) {
-        final item = Item.fromMap(event);
-        setState(() {
-          events.add(CalendarEvent(
-              eventName: item.name,
-              eventDate: item.date,
-              eventTextStyle: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
-              eventBackgroundColor: item.isFinished ? Colors.grey : Colors.cyan));
-          items.add(item);
-          _items.putIfAbsent(item.id!, () => item);
+        ItemLocalStore.itemCollection.stream.where((event) => !Item.fromMap(event).isDeleted)
+            .listen((event) {
+          if (mounted) {
+            final item = Item.fromMap(event);
+            setState(() {
+              events.add(CalendarEvent(
+                  eventName: item.name,
+                  eventDate: item.date,
+                  eventTextStyle: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                  eventBackgroundColor: item.isFinished ? Colors.grey : Colors.cyan));
+              items.add(item);
+              _items.putIfAbsent(item.id!, () => item);
+            });
+          }
         });
-      }
-    });
     super.initState();
   }
 
@@ -74,7 +75,9 @@ class _CalendarPageState extends State<CalendarPage> {
                       content: StatefulBuilder(
                         builder: (context, setState) {
                           return SizedBox(
-                            height: MediaQuery.sizeOf(context).height * 0.7,
+                            height: MediaQuery
+                                .sizeOf(context)
+                                .height * 0.7,
                             width: double.maxFinite,
                             child: Column(
                               children: [
@@ -86,7 +89,7 @@ class _CalendarPageState extends State<CalendarPage> {
                                     children: [
                                       Text(
                                         '${date.month}月 ${date.day}日',
-                                        style: TextStyle(fontSize: 20),
+                                        style: const TextStyle(fontSize: 20),
                                       ),
                                       Align(
                                           alignment: Alignment.topRight,
@@ -111,7 +114,6 @@ class _CalendarPageState extends State<CalendarPage> {
                                         return InkWell(
                                           borderRadius: BorderRadius.circular(10),
                                           onTap: () {
-                                            // TODO:チェックすると増えちゃう
                                             setState(() {
                                               item.isFinished = !item.isFinished;
                                             });
@@ -128,6 +130,7 @@ class _CalendarPageState extends State<CalendarPage> {
                                                     item.isFinished ? TextDecoration.lineThrough : TextDecoration.none),
                                               ),
                                               leading: Checkbox(
+                                                activeColor: Colors.lightBlueAccent,
                                                 value: item.isFinished,
                                                 shape: const CircleBorder(),
                                                 onChanged: (bool? value) {
@@ -135,7 +138,6 @@ class _CalendarPageState extends State<CalendarPage> {
                                                     item.isFinished = value!;
                                                     item.save();
                                                   });
-
                                                 },
                                               ),
                                             ),

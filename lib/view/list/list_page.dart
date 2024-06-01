@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 import 'package:intl/intl.dart';
+import 'package:kauno/components/primary_button.dart';
 import 'package:kauno/model/item.dart';
 import 'package:kauno/model/item_category.dart';
 import 'package:kauno/util/function_utils.dart';
@@ -20,9 +22,12 @@ class ListPage extends StatefulWidget {
 
 class _ListPageState extends State<ListPage> {
   TextEditingController itemNameController = TextEditingController();
-  TextEditingController itemQuantityController = TextEditingController();
+  TextEditingController itemQuantityController =
+      TextEditingController(text: '1');
   TextEditingController categoryController = TextEditingController();
   TextEditingController priceController = TextEditingController();
+  TextEditingController dateController = TextEditingController();
+
   StreamSubscription<Map<String, dynamic>>? _itemSubscription;
   StreamSubscription<Map<String, dynamic>>? _categorySubscription;
   final _items = <String, Item>{};
@@ -42,7 +47,8 @@ class _ListPageState extends State<ListPage> {
 
   Future<bool> deleteCategory() async {
     try {
-      final items = _items.values.where((item) => item.category == categoryList[_selectCategoryIndex].name);
+      final items = _items.values.where(
+          (item) => item.category == categoryList[_selectCategoryIndex].name);
       for (var item in items) {
         item.category = null;
         await item.save();
@@ -61,8 +67,9 @@ class _ListPageState extends State<ListPage> {
 
   @override
   void initState() {
-    _itemSubscription =
-        ItemLocalStore.itemCollection.stream.where((event) => !Item.fromMap(event).isDeleted).listen((event) {
+    _itemSubscription = ItemLocalStore.itemCollection.stream
+        .where((event) => !Item.fromMap(event).isDeleted)
+        .listen((event) {
       if (mounted) {
         final item = Item.fromMap(event);
         setState(() {
@@ -71,7 +78,8 @@ class _ListPageState extends State<ListPage> {
       }
       // if (kIsWeb) ItemLocalStore.itemCollection.stream.asBroadcastStream();
     });
-    _categorySubscription = CategoryLocalStore.categoryCollection.stream.listen((event) {
+    _categorySubscription =
+        CategoryLocalStore.categoryCollection.stream.listen((event) {
       if (mounted) {
         setState(() {
           final category = ItemCategory.fromMap(event);
@@ -80,13 +88,14 @@ class _ListPageState extends State<ListPage> {
       }
       // if (kIsWeb) CategoryLocalStore.categoryCollection.stream.asBroadcastStream();
     });
+    setState(() {
+      dateController.text = dateFormatter.format(_today);
+    });
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    final bottomSpace = MediaQuery.of(context).viewInsets.bottom;
-
     return Scaffold(
       appBar: WidgetUtils.createAppBar('リスト'),
       body: SafeArea(
@@ -104,36 +113,45 @@ class _ListPageState extends State<ListPage> {
                       borderRadius: BorderRadius.circular(20),
                       onTap: () {
                         setState(() {
-                          DateTime newDate = _selectedDate.subtract(const Duration(days: 1));
+                          DateTime newDate =
+                              _selectedDate.subtract(const Duration(days: 1));
                           _selectedDate = newDate;
+                          dateController.text = dateFormatter.format(newDate);
                           // getTodoList(dateFormatter.format(newDate));
                         });
                       },
                       child: const Icon(Icons.chevron_left)),
-                  Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
-                    Text(
-                      '${dateFormatter.format(_selectedDate)}(${FunctionUtils.formatWeekday(_selectedDate.weekday)})',
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                    if (!_selectedDate.isAtSameMomentAs(_today))
-                      RichText(
-                          text: TextSpan(
-                              text: '今日の日付に戻る',
-                              style: const TextStyle(fontSize: 14, color: Colors.blue),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  setState(() {
-                                    _selectedDate = _today;
-                                  });
-                                })),
-                  ]),
+                  Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          '${dateFormatter.format(_selectedDate)}(${FunctionUtils.formatWeekday(_selectedDate.weekday)})',
+                          style: const TextStyle(fontSize: 18),
+                        ),
+                        if (!_selectedDate.isAtSameMomentAs(_today))
+                          RichText(
+                              text: TextSpan(
+                                  text: '今日の日付に戻る',
+                                  style: const TextStyle(
+                                      fontSize: 14, color: Colors.blue),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () {
+                                      setState(() {
+                                        _selectedDate = _today;
+                                        dateController.text =
+                                            dateFormatter.format(_today);
+                                      });
+                                    })),
+                      ]),
                   InkWell(
                       splashColor: Colors.grey[100],
                       borderRadius: BorderRadius.circular(20),
                       onTap: () {
                         setState(() {
-                          DateTime newDate = _selectedDate.add(const Duration(days: 1));
+                          DateTime newDate =
+                              _selectedDate.add(const Duration(days: 1));
                           _selectedDate = newDate;
+                          dateController.text = dateFormatter.format(newDate);
                           // getTodoList(dateFormatter.format(newDate));
                         });
                       },
@@ -142,7 +160,8 @@ class _ListPageState extends State<ListPage> {
               ),
               Container(
                 height: 40,
-                decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey))),
+                decoration: const BoxDecoration(
+                    border: Border(bottom: BorderSide(color: Colors.grey))),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
@@ -152,29 +171,7 @@ class _ListPageState extends State<ListPage> {
                           scrollDirection: Axis.horizontal,
                           itemCount: categoryList.length,
                           itemBuilder: (context, index) {
-                            return InkWell(
-                              borderRadius: BorderRadius.circular(50),
-                              onTap: () {
-                                setState(() {
-                                  _selectCategoryIndex = index;
-                                });
-                              },
-                              child: Container(
-                                  // width: 100,
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                      // border: Border(bottom: BorderSide(color: _selectCategoryIndex == index ? Colors.blue: Colors.grey))
-                                      border: Border(
-                                          bottom: _selectCategoryIndex == index
-                                              ? const BorderSide(color: Colors.blue)
-                                              : BorderSide.none)),
-                                  child: Text(
-                                    categoryList[index].name,
-                                    style: TextStyle(
-                                      color: _selectCategoryIndex == index ? Colors.blue : Colors.black,
-                                    ),
-                                  )),
-                            );
+                            return categoryTab(index, categoryList[index].name);
                           }),
                     ),
                     Padding(
@@ -191,15 +188,22 @@ class _ListPageState extends State<ListPage> {
                                   height: 500,
                                   padding: const EdgeInsets.all(20),
                                   child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
                                     children: [
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
-                                          const Text('カテゴリー追加', style: TextStyle(fontWeight: FontWeight.bold)),
+                                          const Text('カテゴリー追加',
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 20)),
                                           Align(
                                             alignment: Alignment.centerRight,
                                             child: InkWell(
-                                              borderRadius: BorderRadius.circular(50),
+                                              borderRadius:
+                                                  BorderRadius.circular(50),
                                               onTap: () {
                                                 Navigator.pop(context);
                                               },
@@ -212,30 +216,49 @@ class _ListPageState extends State<ListPage> {
                                           ),
                                         ],
                                       ),
-                                      TextField(
-                                        controller: categoryController,
-                                        decoration: const InputDecoration(
-                                          labelText: 'カテゴリー入力',
-                                          // hintText: 'カテゴリーを追加'
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 20, horizontal: 30),
+                                        child: Column(
+                                          children: [
+                                            TextField(
+                                              controller: categoryController,
+                                              decoration: const InputDecoration(
+                                                labelText: 'カテゴリー名入力',
+                                                // hintText: 'カテゴリーを追加'
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.only(
+                                                  top: 20),
+                                              alignment: Alignment.centerRight,
+                                              child: PrimaryButton(
+                                                onPressed: () async {
+                                                  if (categoryController
+                                                      .text.isNotEmpty) {
+                                                    // save category
+                                                    final id =
+                                                        CategoryLocalStore
+                                                            .categoryCollection
+                                                            .doc()
+                                                            .id;
+                                                    ItemCategory newCategory =
+                                                        ItemCategory(
+                                                            id: id,
+                                                            name:
+                                                                categoryController
+                                                                    .text);
+                                                    await newCategory.save();
+                                                  }
+                                                  if (!context.mounted) return;
+                                                  Navigator.pop(context);
+                                                },
+                                                children: '登録',
+                                              ),
+                                            )
+                                          ],
                                         ),
                                       ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(vertical: 10),
-                                        alignment: Alignment.centerRight,
-                                        child: ElevatedButton(
-                                            onPressed: () async {
-                                              if (categoryController.text.isNotEmpty) {
-                                                // save category
-                                                final id = CategoryLocalStore.categoryCollection.doc().id;
-                                                ItemCategory newCategory =
-                                                    ItemCategory(id: id, name: categoryController.text);
-                                                await newCategory.save();
-                                              }
-                                              if (!context.mounted) return;
-                                              Navigator.pop(context);
-                                            },
-                                            child: Text(categoryController.text.isNotEmpty ? '登録' : '閉じる')),
-                                      )
                                     ],
                                   ),
                                 );
@@ -281,7 +304,9 @@ class _ListPageState extends State<ListPage> {
                                           } else {
                                             if (!context.mounted) return;
                                             ScaffoldMessenger.of(context)
-                                                .showSnackBar(const SnackBar(content: Text('エラーがあり削除できませんでした。')));
+                                                .showSnackBar(const SnackBar(
+                                                    content: Text(
+                                                        'エラーがあり削除できませんでした。')));
                                           }
                                         },
                                       ),
@@ -292,7 +317,9 @@ class _ListPageState extends State<ListPage> {
                         },
                         child: Icon(
                           Icons.delete_forever,
-                          color: _selectCategoryIndex == 0 ? Colors.grey[400] : Colors.grey[700],
+                          color: _selectCategoryIndex == 0
+                              ? Colors.grey[400]
+                              : Colors.grey[700],
                           size: 30,
                         )),
                   ],
@@ -302,7 +329,8 @@ class _ListPageState extends State<ListPage> {
                 child: IndexedStack(
                     index: _selectCategoryIndex,
                     children: List.generate(categoryList.length, (index) {
-                      String? categoryName = index > 0 ? categoryList[index].name : null;
+                      String? categoryName =
+                          index > 0 ? categoryList[index].name : null;
                       return itemListView(categoryName);
                     })),
               ),
@@ -311,142 +339,66 @@ class _ListPageState extends State<ListPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.indigoAccent,
+        foregroundColor: Colors.white,
         onPressed: () async {
-          await showModalBottomSheet(
-              backgroundColor: Colors.white,
-              isScrollControlled: true,
-              context: context,
-              builder: (BuildContext context) {
-                return Container(
-                  // color: Colors.white,
-                  height: 500,
-                  padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 30),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Align(
-                        alignment: Alignment.topRight,
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                          child: const Icon(
-                            Icons.close,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                      const Text('商品登録', style: TextStyle(fontSize: 20)),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            TextField(
-                              keyboardType: TextInputType.text,
-                              controller: itemNameController,
-                              decoration: const InputDecoration(labelText: '商品名'),
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(right: 10),
-                                    child: TextField(
-                                      controller: priceController,
-                                      keyboardType: TextInputType.number,
-                                      decoration: const InputDecoration(labelText: '価格', suffix: Text('円')),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: 100,
-                                  child: DropdownButtonFormField(
-                                      decoration: const InputDecoration(
-                                        labelText: '個数',
-                                        suffix: Text('個'),
-                                      ),
-                                      items: quantityList.map<DropdownMenuItem<int>>((int value) {
-                                        return DropdownMenuItem<int>(value: value, child: Text(value.toString()));
-                                      }).toList(),
-                                      onChanged: (int? value) {
-                                        itemQuantityController.text = value.toString();
-                                      }),
-                                )
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (bottomSpace == 0)
-                        Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: ElevatedButton(
-                              onPressed: () async {
-                                if (itemNameController.text.isNotEmpty && itemQuantityController.text.isNotEmpty) {
-                                  // _selectedCategoryIndexでcategoryを指定
-                                  final category =
-                                      _selectCategoryIndex == 0 ? null : categoryList[_selectCategoryIndex].name;
-                                  final id = ItemLocalStore.itemCollection.doc().id;
-                                  Item newItem = Item(
-                                      id: id,
-                                      category: category,
-                                      name: itemNameController.text,
-                                      price: priceController.text.isNotEmpty ? int.parse(priceController.text) : 0,
-                                      quantity: int.parse(itemQuantityController.text),
-                                      date: _selectedDate,
-                                      shop: '',
-                                      isFinished: false,
-                                      isDeleted: false);
-                                  var result = await newItem.save();
-                                  if (result == true) {
-                                    if (!context.mounted) return;
-                                    // ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('リストを登録しました。')));
-                                    setState(() {
-                                      // _items.putIfAbsent(newItem.id!, () => newItem);
-                                      itemNameController.text = '';
-                                      priceController.text = '';
-                                    });
-                                  } else {
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(const SnackBar(content: Text('リストの登録に失敗しました。')));
-                                  }
-                                }
-                                if (!context.mounted) return;
-                                Navigator.pop(context);
-                              },
-                              child: itemNameController.text.isNotEmpty ? const Text('登録') : const Text('閉じる')),
-                        )
-                    ],
-                  ),
-                );
-              });
+          itemNameController.text = '';
+          priceController.text = '';
+          itemQuantityController.text = '1';
+          await _showModal(null);
         },
         child: const Icon(Icons.add),
       ),
     );
   }
 
+  Widget categoryTab(int index, String categoryName) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(50),
+      onTap: () {
+        setState(() {
+          _selectCategoryIndex = index;
+        });
+      },
+      child: Container(
+          // width: 100,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+              // border: Border(bottom: BorderSide(color: _selectCategoryIndex == index ? Colors.blue: Colors.grey))
+              border: Border(
+                  bottom: _selectCategoryIndex == index
+                      ? const BorderSide(color: Colors.blue)
+                      : BorderSide.none)),
+          child: Text(
+            categoryName,
+            style: TextStyle(
+              color: _selectCategoryIndex == index ? Colors.blue : Colors.black,
+            ),
+          )),
+    );
+  }
+
   Widget itemListView(String? categoryName) {
     List<Item> items = [];
     var total = 0;
-    DateTime formatSelectedDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    DateTime formatSelectedDate =
+        DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
     if (categoryName != null) {
       final filter = _items.values
-          .where((item) => item.category == categoryName && item.date.isAtSameMomentAs(formatSelectedDate))
+          .where((item) =>
+              item.category == categoryName &&
+              DateTime(item.date.year, item.date.month, item.date.day).isAtSameMomentAs(formatSelectedDate))
           .toList();
       items = filter;
     } else {
-      final filter = _items.values.where((item) => item.date.isAtSameMomentAs(formatSelectedDate)).toList();
+      final filter = _items.values
+          .where((item) => DateTime(item.date.year, item.date.month, item.date.day).isAtSameMomentAs(formatSelectedDate))
+          .toList();
       items = filter;
     }
     for (var item in items) {
       total += item.price * item.quantity;
     }
-
     return Column(
       children: [
         Container(
@@ -472,130 +424,113 @@ class _ListPageState extends State<ListPage> {
                             _items.remove(item.id);
                           });
                           if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('削除しました。')));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('削除しました。')));
                         }
                       }
                       debugPrint('dismissed');
                     },
-                    direction: item.isFinished ? DismissDirection.startToEnd : DismissDirection.none,
+                    direction: item.isFinished
+                        ? DismissDirection.startToEnd
+                        : DismissDirection.none,
                     key: UniqueKey(),
                     background: Container(
                       alignment: Alignment.centerLeft,
                       child: const Icon(Icons.delete),
                     ),
-                    // child: Card(
-                    //   color: Colors.white,
-                    //   child: ListTile(
-                    //         title: Row(
-                    //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    //           children: [
-                    //             Text(
-                    //               item.name,
-                    //               style: TextStyle(
-                    //                   color: item.isFinished ? Colors.grey : Colors.black,
-                    //                   decoration:
-                    //                   item.isFinished ? TextDecoration.lineThrough : TextDecoration.none),
-                    //             ),
-                    //             Text(
-                    //               '${item.quantity} 個',
-                    //               style: TextStyle(color: item.isFinished ? Colors.grey : Colors.black),
-                    //             )
-                    //           ],
-                    //         ),
-                    //         subtitle: Row(
-                    //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    //           children: [
-                    //             Row(
-                    //               children: [
-                    //                 if (item.shop.isNotEmpty)
-                    //                   Padding(
-                    //                     padding: const EdgeInsets.only(right: 5.0),
-                    //                     child: Text(item.shop, style: const TextStyle(fontSize: 12),),
-                    //                   ),
-                    //                 Text(item.category != null ? item.category!: 'カテゴリーなし', style: const TextStyle(fontSize: 12),)
-                    //               ],
-                    //             ),
-                    //             Text('${numberFormatter.format(item.price)} 円', style: const TextStyle(fontSize: 12),)
-                    //           ],
-                    //         ),
-                    //     leading: Checkbox(
-                    //       value: item.isFinished,
-                    //       shape: const CircleBorder(),
-                    //           onChanged: (bool? value) async {
-                    //             if (item.isFinished != value) {
-                    //               var result = await item.save();
-                    //               if (result == true) {
-                    //                 setState(() {
-                    //                   item.isFinished = value!;
-                    //                 });
-                    //               }
-                    //             }
-                    //             // await ItemSqlite.updateTodo(newTodo)
-                    //           },
-                    //     ),
-                    //   ),
-                    // ),
-                    child: Card(
-                      // margin: const EdgeInsets.symmetric(vertical: 5),
-                      color: Colors.white,
-                      child: CheckboxListTile(
-                        // activeColor: Colors.blue,
-                        title: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              item.name,
-                              style: TextStyle(
-                                  color: item.isFinished ? Colors.grey : Colors.black,
-                                  decoration: item.isFinished ? TextDecoration.lineThrough : TextDecoration.none),
-                            ),
-                            Text(
-                              '${item.quantity} 個',
-                              style: TextStyle(color: item.isFinished ? Colors.grey : Colors.black),
-                            )
-                          ],
-                        ),
-                        subtitle: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                if (item.shop.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 5.0),
-                                    child: Text(
-                                      item.shop,
-                                      style: const TextStyle(fontSize: 12),
+                    child: InkWell(
+                      onTap: () async {
+                        if (item.category != null) {
+                          categoryController.text = item.category!;
+                        }
+                        itemNameController.text = item.name;
+                        priceController.text = item.price.toString();
+                        itemQuantityController.text = item.quantity.toString();
+                        await _showModal(item);
+                      },
+                      child: Card(
+                        // margin: const EdgeInsets.symmetric(vertical: 5),
+                        color: Colors.white,
+                        child: ListTile(
+                          // activeColor: Colors.blue,
+                          title: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                item.name,
+                                style: TextStyle(
+                                    color: item.isFinished
+                                        ? Colors.grey
+                                        : Colors.black,
+                                    decoration: item.isFinished
+                                        ? TextDecoration.lineThrough
+                                        : TextDecoration.none),
+                              ),
+                              Text(
+                                '${item.quantity} 個',
+                                style: TextStyle(
+                                    color: item.isFinished
+                                        ? Colors.grey
+                                        : Colors.black),
+                              )
+                            ],
+                          ),
+                          subtitle: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  if (item.shop.isNotEmpty)
+                                    Padding(
+                                      padding:
+                                          const EdgeInsets.only(right: 5.0),
+                                      child: Text(
+                                        item.shop,
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
                                     ),
-                                  ),
-                                Text(
-                                  item.category != null ? item.category! : 'カテゴリーなし',
-                                  style: const TextStyle(fontSize: 12),
-                                )
-                              ],
-                            ),
-                            Text(
-                              '${numberFormatter.format(item.price)} 円',
-                              style: const TextStyle(fontSize: 12),
-                            )
-                          ],
-                        ),
-                        controlAffinity: ListTileControlAffinity.leading,
-                        value: item.isFinished,
-                        shape: const CircleBorder(),
-                        // shape: const RoundedRectangleBorder(
-                        //     borderRadius: BorderRadius.all(Radius.circular(10))),
-                        onChanged: (bool? value) async {
-                          item.isFinished = value!;
-                          var result = await item.save();
-                          if (result == true) {
-                            setState(() {
-                              item.isFinished = value;
-                            });
-                          }
+                                  Text(
+                                    item.category != null
+                                        ? item.category!
+                                        : 'カテゴリーなし',
+                                    style: const TextStyle(fontSize: 12),
+                                  )
+                                ],
+                              ),
+                              Text(
+                                '${numberFormatter.format(item.price)} 円',
+                                style: const TextStyle(fontSize: 12),
+                              )
+                            ],
+                          ),
+                          leading: Checkbox(
+                            activeColor: Colors.lightBlueAccent,
+                            value: item.isFinished,
+                            shape: const CircleBorder(),
+                            onChanged: (bool? value) {
+                              setState(() {
+                                item.isFinished = value!;
+                                item.save();
+                              });
+                            },
+                          ),
+                          // controlAffinity: ListTileControlAffinity.leading,
+                          // value: item.isFinished,
+                          // shape: const CircleBorder(),
+                          // // shape: const RoundedRectangleBorder(
+                          // //     borderRadius: BorderRadius.all(Radius.circular(10))),
+                          // onChanged: (bool? value) async {
+                          //   item.isFinished = value!;
+                          //   var result = await item.save();
+                          //   if (result == true) {
+                          //     setState(() {
+                          //       item.isFinished = value;
+                          //     });
+                          //   }
 
                           // await ItemSqlite.updateTodo(newTodo)
-                        },
+                          // },
+                        ),
                       ),
                     ),
                   );
@@ -608,6 +543,214 @@ class _ListPageState extends State<ListPage> {
           )
       ],
     );
+  }
+
+  Future _showModal(Item? item) async {
+    await showModalBottomSheet(
+        backgroundColor: Colors.white,
+        isScrollControlled: true,
+        context: context,
+        builder: (BuildContext context) {
+          return Container(
+            // color: Colors.white,
+            height: MediaQuery.sizeOf(context).height * 0.9,
+            padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 30),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('商品登録',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 20)),
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.pop(context);
+                          categoryController.text = '';
+                          itemNameController.text = '';
+                          priceController.text ='';
+                          itemQuantityController.text = '0';
+                        },
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.grey,
+                          size: 40,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 20.0, horizontal: 20),
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
+                      TextField(
+                        controller: dateController,
+                        decoration: const InputDecoration(label: Text('日付')),
+                        onTap: () {
+                          FocusScope.of(context).requestFocus(FocusNode());
+                          DatePicker.showDatePicker(
+                              locale: LocaleType.jp,
+                              context,
+                              showTitleActions: true,
+                              minTime: DateTime(_today.year, _today.month, 1),
+                              maxTime:
+                                  DateTime(_today.year, _today.month + 1, 0),
+                              onConfirm: (DateTime date) {
+                            setState(() {
+                              dateController.text = dateFormatter.format(date);
+                            });
+                          });
+                        },
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 15.0),
+                        child: categoryController.text.isNotEmpty ? DropdownButtonFormField(
+                          disabledHint: const Text('選べるカテゴリーがありません', style: TextStyle(fontSize: 14),),
+                            decoration:
+                                const InputDecoration(labelText: 'カテゴリー'),
+                            items: categoryList.where((category) => category.name != 'すべて')
+                                .map<DropdownMenuItem<String>>(
+                                    (ItemCategory value) {
+                              return DropdownMenuItem(
+                                  value: value.name, child: Text(value.name));
+                            }).toList(),
+                            value: categoryController.text,
+                            // value: categoryList[0],
+                            // value: categoryList.firstWhere((category) => category.name == categoryController.text, orElse: () => null),
+                            onChanged: (String? value) {
+                              if (value != null) {
+                                categoryController.text = value;
+                              }
+                            }): DropdownButtonFormField(
+                          disabledHint: const Text('選べるカテゴリーがありません', style: TextStyle(fontSize: 14),),
+                            decoration:
+                                const InputDecoration(labelText: 'カテゴリー'),
+                            items: categoryList.where((category) => category.name != 'すべて')
+                                .map<DropdownMenuItem<String>>(
+                                    (ItemCategory value) {
+                              return DropdownMenuItem(
+                                  value: value.name, child: Text(value.name));
+                            }).toList(),
+                            onChanged: (String? value) {
+                              if (value != null) {
+                                categoryController.text = value;
+                              }
+                            }),
+                      ),
+                      TextField(
+                        keyboardType: TextInputType.text,
+                        controller: itemNameController,
+                        decoration: const InputDecoration(labelText: '商品名'),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 15.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: TextField(
+                                  controller: priceController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                      labelText: '価格', suffix: Text('円')),
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 100,
+                              child: DropdownButtonFormField(
+                                  decoration: const InputDecoration(
+                                    labelText: '個数',
+                                    suffix: Text('個'),
+                                  ),
+                                  items: quantityList
+                                      .map<DropdownMenuItem<int>>((int value) {
+                                    return DropdownMenuItem<int>(
+                                        value: value,
+                                        child: Text(value.toString()));
+                                  }).toList(),
+                                  value: int.parse(itemQuantityController.text),
+                                  onChanged: (int? value) {
+                                    itemQuantityController.text =
+                                        value.toString();
+                                  }),
+                            )
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // if (bottomSpace == 0)
+                Container(
+                    alignment: Alignment.bottomRight,
+                    padding: const EdgeInsets.all(20),
+                    child: PrimaryButton(
+                      onPressed: () async {
+                        if (itemNameController.text.isNotEmpty &&
+                            itemQuantityController.text.isNotEmpty) {
+                          var result = false;
+                          if (item != null) {
+                            setState((){
+                              item.category = categoryController.text;
+                            item.name = itemNameController.text;
+                            item.price = int.parse(priceController.text);
+                            item.quantity = int.parse(itemQuantityController.text);
+                            item.date = _selectedDate;
+                            item.shop = '';
+                            });
+                            result = await item.save();
+                          } else {
+                            final id = ItemLocalStore.itemCollection.doc().id;
+                          Item newItem = Item(
+                              id: id,
+                              category: categoryController.text.isNotEmpty ? categoryController.text: null,
+                              name: itemNameController.text,
+                              price: priceController.text.isNotEmpty
+                                  ? int.parse(priceController.text)
+                                  : 0,
+                              quantity: int.parse(itemQuantityController.text),
+                              date: _selectedDate,
+                              shop: '',
+                              isFinished: false,
+                              isDeleted: false);
+                          result = await newItem.save();
+                          }
+
+                          if (result == true) {
+                            if (!context.mounted) return;
+                            // ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('リストを登録しました。')));
+                            setState(() {
+                              // _items.putIfAbsent(newItem.id!, () => newItem);
+                              itemNameController.text = '';
+                              priceController.text = '';
+
+                            });
+                          } else {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('リストの登録に失敗しました。')));
+                          }
+                        }
+                        if (!context.mounted) return;
+                        Navigator.pop(context);
+                      },
+                      children: '登録',
+                    ))
+              ],
+            ),
+          );
+        });
   }
 
   @override

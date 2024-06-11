@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:kauno/components/add_category.dart';
+import 'package:kauno/components/category_tab.dart';
+import 'package:kauno/components/delete_category.dart';
 import 'package:kauno/components/primary_button.dart';
 import 'package:kauno/model/item.dart';
 import 'package:kauno/model/item_category.dart';
@@ -50,13 +53,16 @@ class _ListPageState extends State<ListPage> {
 
   Future<bool> deleteCategory() async {
     try {
+      // itemにあるカテゴリーをnullにする
       final items = _items.values.where(
           (item) => item.category == categoryList[_selectCategoryIndex].name);
       for (var item in items) {
         item.category = null;
         await item.save();
       }
+      // 登録してあるカテゴリーを削除
       await categoryList[_selectCategoryIndex].delete();
+      // カテゴリーリストから該当のカテゴリーを削除
       setState(() {
         categoryList.removeAt(_selectCategoryIndex);
         _selectCategoryIndex = 0;
@@ -99,7 +105,7 @@ class _ListPageState extends State<ListPage> {
   @override
   Widget build(BuildContext context) {
     onTapSearchDate() {
-      searchDateController.text = '';
+      searchDateController.clear();
       setState(() {
         searchDate = null;
         _items.addAll(_defaultItems);
@@ -112,7 +118,7 @@ class _ListPageState extends State<ListPage> {
     }
 
     onTapSearchShop() {
-      searchShopController.text = '';
+      searchShopController.clear();
       setState(() {
         _items.addAll(_defaultItems);
         if (searchDate != null) {
@@ -127,7 +133,7 @@ class _ListPageState extends State<ListPage> {
       setState(() {
         searchDate = null;
       });
-      searchDateController.text = '';
+      searchDateController.clear();
       Navigator.pop(context);
     }
 
@@ -143,7 +149,7 @@ class _ListPageState extends State<ListPage> {
                 height: 40,
                 decoration: const BoxDecoration(
                     border: Border(bottom: BorderSide(color: Colors.grey))),
-                child: Row(
+                child:  Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Expanded(
@@ -152,159 +158,191 @@ class _ListPageState extends State<ListPage> {
                           scrollDirection: Axis.horizontal,
                           itemCount: categoryList.length,
                           itemBuilder: (context, index) {
-                            return categoryTab(index, categoryList[index].name);
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(50),
+                              onTap: () {
+                                setState(() {
+                                  _selectCategoryIndex = index;
+                                });
+                              },
+                              child: CategoryTab(
+                                  isSelected: _selectCategoryIndex == index,
+                                  name: categoryList[index].name
+                              ),
+                            );
                           }),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(50),
-                        onTap: () async {
-                          await showModalBottomSheet(
-                              backgroundColor: Colors.white,
-                              isScrollControlled: true,
-                              context: context,
-                              builder: (BuildContext context) {
-                                return Container(
-                                  height: 500,
-                                  padding: const EdgeInsets.all(20),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          const Text('カテゴリー追加',
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 20)),
-                                          Align(
-                                            alignment: Alignment.centerRight,
-                                            child: InkWell(
-                                              borderRadius:
-                                                  BorderRadius.circular(50),
-                                              onTap: () {
-                                                Navigator.pop(context);
-                                              },
-                                              child: const Icon(
-                                                Icons.close,
-                                                color: Colors.grey,
-                                                size: 40,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 20, horizontal: 30),
-                                        child: Column(
-                                          children: [
-                                            TextField(
-                                              controller: categoryController,
-                                              decoration: const InputDecoration(
-                                                labelText: 'カテゴリー名入力',
-                                                // hintText: 'カテゴリーを追加'
-                                              ),
-                                            ),
-                                            Container(
-                                              padding: const EdgeInsets.only(
-                                                  top: 20),
-                                              alignment: Alignment.centerRight,
-                                              child: PrimaryButton(
-                                                onPressed: () async {
-                                                  if (categoryController
-                                                      .text.isNotEmpty) {
-                                                    // save category
-                                                    final id =
-                                                        CategoryLocalStore
-                                                            .categoryCollection
-                                                            .doc()
-                                                            .id;
-                                                    ItemCategory newCategory =
-                                                        ItemCategory(
-                                                            id: id,
-                                                            name:
-                                                                categoryController
-                                                                    .text);
-                                                    await newCategory.save();
-                                                  }
-                                                  if (!context.mounted) return;
-                                                  Navigator.pop(context);
-                                                },
-                                                children: '登録',
-                                              ),
-                                            )
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              });
-                        },
-                        child: const Icon(
-                          Icons.add,
-                          size: 30,
-                        ),
-                      ),
-                    ),
-                    InkWell(
-                        borderRadius: BorderRadius.circular(50),
-                        onTap: () {
-                          if (_selectCategoryIndex > 0) {
-                            showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return CupertinoAlertDialog(
-                                    title: const Text(
-                                      'このカテゴリーを削除しますか？',
-                                      style: TextStyle(fontSize: 14),
-                                    ),
-                                    content: Text(
-                                      '【${categoryList[_selectCategoryIndex].name}】が削除されますが、登録されているアイテムは削除されません。',
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                    actions: [
-                                      CupertinoDialogAction(
-                                        isDestructiveAction: true,
-                                        onPressed: () {
-                                          Navigator.pop(context);
-                                        },
-                                        child: const Text('キャンセル'),
-                                      ),
-                                      CupertinoDialogAction(
-                                        child: const Text('OK'),
-                                        onPressed: () async {
-                                          var result = await deleteCategory();
-                                          if (result == true) {
-                                            if (!context.mounted) return;
-                                            Navigator.pop(context);
-                                          } else {
-                                            if (!context.mounted) return;
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(const SnackBar(
-                                                    content: Text(
-                                                        'エラーがあり削除できませんでした。')));
-                                          }
-                                        },
-                                      ),
-                                    ],
-                                  );
-                                });
-                          }
-                        },
-                        child: Icon(
-                          Icons.delete_forever,
-                          color: _selectCategoryIndex == 0
-                              ? Colors.grey[400]
-                              : Colors.grey[700],
-                          size: 30,
-                        )),
+                    AddCategory(categoryController: categoryController),
+                    DeleteCategory(
+                        index: _selectCategoryIndex,
+                        name: categoryList[_selectCategoryIndex].name,
+                        deleteCategory: deleteCategory
+                    )
                   ],
                 ),
+                // child: Row(
+                //   mainAxisAlignment: MainAxisAlignment.start,
+                //   children: [
+                //     Expanded(
+                //       child: ListView.builder(
+                //           // shrinkWrap: true,
+                //           scrollDirection: Axis.horizontal,
+                //           itemCount: categoryList.length,
+                //           itemBuilder: (context, index) {
+                //             return categoryTab(index, categoryList[index].name);
+                //           }),
+                //     ),
+                //     Padding(
+                //       padding: const EdgeInsets.only(right: 10),
+                //       child: InkWell(
+                //         borderRadius: BorderRadius.circular(50),
+                //         onTap: () async {
+                //           await showModalBottomSheet(
+                //               backgroundColor: Colors.white,
+                //               isScrollControlled: true,
+                //               context: context,
+                //               builder: (BuildContext context) {
+                //                 return Container(
+                //                   height: 500,
+                //                   padding: const EdgeInsets.all(20),
+                //                   child: Column(
+                //                     crossAxisAlignment:
+                //                         CrossAxisAlignment.center,
+                //                     children: [
+                //                       Row(
+                //                         mainAxisAlignment:
+                //                             MainAxisAlignment.spaceBetween,
+                //                         children: [
+                //                           const Text('カテゴリー追加',
+                //                               style: TextStyle(
+                //                                   fontWeight: FontWeight.bold,
+                //                                   fontSize: 20)),
+                //                           Align(
+                //                             alignment: Alignment.centerRight,
+                //                             child: InkWell(
+                //                               borderRadius:
+                //                                   BorderRadius.circular(50),
+                //                               onTap: () {
+                //                                 Navigator.pop(context);
+                //                               },
+                //                               child: const Icon(
+                //                                 Icons.close,
+                //                                 color: Colors.grey,
+                //                                 size: 40,
+                //                               ),
+                //                             ),
+                //                           ),
+                //                         ],
+                //                       ),
+                //                       Padding(
+                //                         padding: const EdgeInsets.symmetric(
+                //                             vertical: 20, horizontal: 30),
+                //                         child: Column(
+                //                           children: [
+                //                             TextField(
+                //                               controller: categoryController,
+                //                               decoration: const InputDecoration(
+                //                                 labelText: 'カテゴリー名入力',
+                //                                 // hintText: 'カテゴリーを追加'
+                //                               ),
+                //                             ),
+                //                             Container(
+                //                               padding: const EdgeInsets.only(
+                //                                   top: 20),
+                //                               alignment: Alignment.centerRight,
+                //                               child: PrimaryButton(
+                //                                 onPressed: () async {
+                //                                   if (categoryController
+                //                                       .text.isNotEmpty) {
+                //                                     // save category
+                //                                     final id =
+                //                                         CategoryLocalStore
+                //                                             .categoryCollection
+                //                                             .doc()
+                //                                             .id;
+                //                                     ItemCategory newCategory =
+                //                                         ItemCategory(
+                //                                             id: id,
+                //                                             name:
+                //                                                 categoryController
+                //                                                     .text);
+                //                                     await newCategory.save();
+                //                                   }
+                //                                   if (!context.mounted) return;
+                //                                   Navigator.pop(context);
+                //                                 },
+                //                                 children: '登録',
+                //                               ),
+                //                             )
+                //                           ],
+                //                         ),
+                //                       ),
+                //                     ],
+                //                   ),
+                //                 );
+                //               });
+                //         },
+                //         child: const Icon(
+                //           Icons.add,
+                //           size: 30,
+                //         ),
+                //       ),
+                //     ),
+                //     InkWell(
+                //         borderRadius: BorderRadius.circular(50),
+                //         onTap: () {
+                //           if (_selectCategoryIndex > 0) {
+                //             showDialog(
+                //                 context: context,
+                //                 builder: (BuildContext context) {
+                //                   return CupertinoAlertDialog(
+                //                     title: const Text(
+                //                       'このカテゴリーを削除しますか？',
+                //                       style: TextStyle(fontSize: 14),
+                //                     ),
+                //                     content: Text(
+                //                       '【${categoryList[_selectCategoryIndex].name}】が削除されますが、登録されているアイテムは削除されません。',
+                //                       style: const TextStyle(fontSize: 14),
+                //                     ),
+                //                     actions: [
+                //                       CupertinoDialogAction(
+                //                         isDestructiveAction: true,
+                //                         onPressed: () {
+                //                           Navigator.pop(context);
+                //                         },
+                //                         child: const Text('キャンセル'),
+                //                       ),
+                //                       CupertinoDialogAction(
+                //                         child: const Text('OK'),
+                //                         onPressed: () async {
+                //                           var result = await deleteCategory();
+                //                           if (result == true) {
+                //                             if (!context.mounted) return;
+                //                             Navigator.pop(context);
+                //                           } else {
+                //                             if (!context.mounted) return;
+                //                             ScaffoldMessenger.of(context)
+                //                                 .showSnackBar(const SnackBar(
+                //                                     content: Text(
+                //                                         'エラーがあり削除できませんでした。')));
+                //                           }
+                //                         },
+                //                       ),
+                //                     ],
+                //                   );
+                //                 });
+                //           }
+                //         },
+                //         child: Icon(
+                //           Icons.delete_forever,
+                //           color: _selectCategoryIndex == 0
+                //               ? Colors.grey[400]
+                //               : Colors.grey[700],
+                //           size: 30,
+                //         )),
+                //   ],
+                // ),
+
               ),
               Padding(
                 padding:
@@ -403,11 +441,11 @@ class _ListPageState extends State<ListPage> {
         backgroundColor: Colors.indigoAccent,
         foregroundColor: Colors.white,
         onPressed: () async {
-          itemNameController.text = '';
-          priceController.text = '0';
+          itemNameController.clear();
+          priceController.clear();
           itemQuantityController.text = '1';
           dateController.text = dateFormatter.format(_today);
-          shopController.text = '';
+          shopController.clear();
           await _showModal(null);
         },
         child: const Icon(Icons.add),
@@ -539,8 +577,7 @@ class _ListPageState extends State<ListPage> {
                                       child:
                                           Text(dateFormatter.format(item.date)),
                                     ),
-                                    if (item.shop.isNotEmpty)
-                                      Padding(
+                                    Padding(
                                           padding:
                                               const EdgeInsets.only(right: 5),
                                           child: Text(
@@ -550,6 +587,7 @@ class _ListPageState extends State<ListPage> {
                                             style:
                                                 const TextStyle(fontSize: 12),
                                           )),
+                                    if (item.shop.isNotEmpty)
                                     Text(
                                       item.shop,
                                       style: const TextStyle(fontSize: 12),
@@ -592,12 +630,12 @@ class _ListPageState extends State<ListPage> {
   Future _showModal(Item? item) async {
     onTapClose() {
       Navigator.pop(context);
-      categoryController.text = '';
-      itemNameController.text = '';
+      categoryController.clear();
+      itemNameController.clear();
       priceController.text = '0';
       itemQuantityController.text = '1';
       _selectedDate = DateTime.now();
-      shopController.text = '';
+      shopController.clear();
     }
 
     await showModalBottomSheet(
@@ -780,9 +818,9 @@ class _ListPageState extends State<ListPage> {
                             // ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('リストを登録しました。')));
                             setState(() {
                               // _items.putIfAbsent(newItem.id!, () => newItem);
-                              itemNameController.text = '';
-                              priceController.text = '';
-                              shopController.text = '';
+                              itemNameController.clear();
+                              priceController.clear();
+                              shopController.clear();
                             });
                           } else {
                             if (!context.mounted) return;

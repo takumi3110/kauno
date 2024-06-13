@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
+import 'package:intl/intl.dart';
 import 'package:kauno/components/primary_button.dart';
+import 'package:kauno/model/item.dart';
 import 'package:kauno/model/item_category.dart';
 import 'package:kauno/util/localstore/category_localstore.dart';
 
 class WidgetUtils {
+   static final numberFormatter = NumberFormat('#,###');
+
   static AppBar createAppBar(String title) {
     return AppBar(
       title: Text(
@@ -182,6 +186,163 @@ class WidgetUtils {
           );
         });
         },
+      ),
+    );
+  }
+
+  static Widget itemListView(
+      Map<String, Item> items,
+      String? categoryName,
+      void Function(String itemId) itemRemove,
+      Future<void>Function(Item item) onTapItemCard,
+      void Function(Item item, bool? value) onChangeCheck,
+      ) {
+    final dateFormatter = DateFormat('M月d日');
+    List<Item> itemList = [];
+    if (categoryName != null) {
+      final filter =
+          items.values.where((item) => item.category == categoryName).toList();
+      itemList = filter;
+    } else {
+      final filter = items.values.toList();
+      itemList = filter;
+    }
+    itemList.sort((a, b) => a.date.isBefore(b.date) ? 1 : -1);
+    return Padding(
+      padding: const EdgeInsets.all(10),
+      child: Column(
+        children: [
+          if (itemList.isNotEmpty)
+            Expanded(
+              child: ListView.builder(
+                  // shrinkWrap: true,
+                  itemCount: itemList.length,
+                  itemBuilder: (context, index) {
+                    final item = itemList[index];
+                    return Dismissible(
+                      onDismissed: (DismissDirection direction) async {
+                        if (direction == DismissDirection.startToEnd) {
+                          item.isDeleted = true;
+                          // TODO: delete
+                          var result = await item.save();
+                          if (result == true) {
+                            // setState(() {
+                            //   _items.remove(item.id);
+                            // });
+                            itemRemove(item.id!);
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('削除しました。')));
+                          }
+                        }
+                        debugPrint('dismissed');
+                      },
+                      direction: item.isFinished
+                          ? DismissDirection.startToEnd
+                          : DismissDirection.none,
+                      key: UniqueKey(),
+                      background: Container(
+                        alignment: Alignment.centerLeft,
+                        child: const Icon(Icons.delete),
+                      ),
+                      child: InkWell(
+                        onTap: () async {
+                          await onTapItemCard(item);
+                          // if (item.category != null) {
+                          //   categoryController.text = item.category!;
+                          // }
+                          // _selectedDate = item.date;
+                          // dateController.text = dateFormatter.format(item.date);
+                          // itemNameController.text = item.name;
+                          // priceController.text = item.price.toString();
+                          // itemQuantityController.text =
+                          //     item.quantity.toString();
+                          // shopController.text = item.shop;
+                          // await _showModal(item);
+                        },
+                        child: Card(
+                          // margin: const EdgeInsets.symmetric(vertical: 5),
+                          color: Colors.white,
+                          child: ListTile(
+                            // activeColor: Colors.blue,
+                            title: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  item.name,
+                                  style: TextStyle(
+                                      color: item.isFinished
+                                          ? Colors.grey
+                                          : Colors.black,
+                                      decoration: item.isFinished
+                                          ? TextDecoration.lineThrough
+                                          : TextDecoration.none),
+                                ),
+                                Text(
+                                  '${item.quantity} 個',
+                                  style: TextStyle(
+                                      color: item.isFinished
+                                          ? Colors.grey
+                                          : Colors.black),
+                                )
+                              ],
+                            ),
+                            subtitle: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 5),
+                                      child:
+                                          Text(dateFormatter.format(item.date)),
+                                    ),
+                                    Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 5),
+                                        child: Text(
+                                          item.category != null
+                                              ? item.category!
+                                              : 'カテゴリーなし',
+                                          style: const TextStyle(fontSize: 12),
+                                        )),
+                                    if (item.shop.isNotEmpty)
+                                      Text(
+                                        item.shop,
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                  ],
+                                ),
+                                Text(
+                                  '${numberFormatter.format(item.price)} 円',
+                                  style: const TextStyle(fontSize: 12),
+                                )
+                              ],
+                            ),
+                            leading: Checkbox(
+                              activeColor: Colors.lightBlueAccent,
+                              value: item.isFinished,
+                              shape: const CircleBorder(),
+                              onChanged: (bool? value) {
+                                // setState(() {
+                                //   item.isFinished = value!;
+                                //   item.save();
+                                // });
+                                onChangeCheck(item, value);
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+            ),
+          if (itemList.isEmpty)
+            const Align(
+              alignment: Alignment.topCenter,
+              child: Text('登録がありません。'),
+            )
+        ],
       ),
     );
   }

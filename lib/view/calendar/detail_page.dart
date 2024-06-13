@@ -73,6 +73,31 @@ class _DetailPageState extends State<DetailPage> {
     }
   }
 
+  Future<void> onTapItemCard(Item item) async {
+    if (item.category != null) {
+      categoryController.text = item.category!;
+    }
+    dateController.text = dateFormatter.format(item.date);
+    itemNameController.text = item.name;
+    priceController.text = item.price.toString();
+    itemQuantityController.text = item.quantity.toString();
+    shopController.text = item.shop;
+    await _showModal(item);
+  }
+
+  void itemRemove(String itemId) {
+    setState(() {
+      _items.remove(itemId);
+    });
+  }
+
+  void onChangeCheck(Item item, bool? value) {
+    setState(() {
+      item.isFinished = value!;
+      item.save();
+    });
+  }
+
   @override
   void initState() {
     _itemSubscription = ItemLocalStore.itemCollection.stream
@@ -160,7 +185,7 @@ class _DetailPageState extends State<DetailPage> {
                     children: List.generate(categoryList.length, (index) {
                       String? categoryName =
                           index > 0 ? categoryList[index].name : null;
-                      return itemListView(categoryName);
+                      return WidgetUtils.itemListView(_items, categoryName, itemRemove, onTapItemCard, onChangeCheck);
                     })),
               ),
             ],
@@ -178,209 +203,6 @@ class _DetailPageState extends State<DetailPage> {
         },
         child: const Icon(Icons.add),
       ),
-    );
-  }
-
-  Widget itemListView(String? categoryName) {
-    List<Item> items = [];
-    var total = 0;
-    if (categoryName != null) {
-      final filter =
-          _items.values.where((item) => item.category == categoryName).toList();
-      items = filter;
-    } else {
-      items = _items.values.toList();
-    }
-    for (var item in items) {
-      total += item.price * item.quantity;
-    }
-
-    onTapSearchClose() {
-      Navigator.pop(context);
-    }
-
-    onTapSearchShop() {
-      searchShopController.text = '';
-      setState(() {
-        _items.addAll(_defaultItems);
-      });
-    }
-
-    return Column(
-      children: [
-        Container(
-          margin: const EdgeInsets.symmetric(vertical: 10),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Row(
-                children: [
-                  WidgetUtils.searchIconAndModal(
-                      context,
-                      onTapSearchClose,
-                      Container(
-                        height: 300,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 20, horizontal: 30),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            TextField(
-                              controller: searchShopController,
-                              decoration:
-                                  const InputDecoration(labelText: '購入店舗'),
-                            ),
-                            const SizedBox(
-                              height: 20,
-                            ),
-                            PrimaryButton(
-                                onPressed: () {
-                                  if (searchShopController.text.isNotEmpty) {
-                                    setState(() {
-                                      _items.removeWhere((key, value) =>
-                                          value.shop !=
-                                          searchShopController.text);
-                                    });
-                                  }
-                                  Navigator.pop(context);
-                                },
-                                children: '検索')
-                          ],
-                        ),
-                      )),
-                  if (searchShopController.text.isNotEmpty)
-                    WidgetUtils.searchTextBadge(
-                        searchShopController.text, onTapSearchShop),
-                ],
-              ),
-              Text('合計金額: ${numberFormatter.format(total)} 円'),
-            ],
-          ),
-        ),
-        if (items.isNotEmpty)
-          Expanded(
-            child: ListView.builder(
-                // shrinkWrap: true,
-                itemCount: items.length,
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  return Dismissible(
-                    onDismissed: (DismissDirection direction) async {
-                      if (direction == DismissDirection.startToEnd) {
-                        item.isDeleted = true;
-                        // TODO: delete
-                        var result = await item.save();
-                        if (result == true) {
-                          setState(() {
-                            _items.remove(item.id);
-                          });
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('削除しました。')));
-                        }
-                      }
-                      debugPrint('dismissed');
-                    },
-                    direction: item.isFinished
-                        ? DismissDirection.startToEnd
-                        : DismissDirection.none,
-                    key: UniqueKey(),
-                    background: Container(
-                      alignment: Alignment.centerLeft,
-                      child: const Icon(Icons.delete),
-                    ),
-                    child: InkWell(
-                      onTap: () async {
-                        if (item.category != null) {
-                          categoryController.text = item.category!;
-                        }
-                        itemNameController.text = item.name;
-                        priceController.text = item.price.toString();
-                        itemQuantityController.text = item.quantity.toString();
-                        shopController.text = item.shop;
-                        await _showModal(item);
-                      },
-                      child: Card(
-                        // margin: const EdgeInsets.symmetric(vertical: 5),
-                        color: Colors.white,
-                        child: ListTile(
-                          // activeColor: Colors.blue,
-                          title: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                item.name,
-                                style: TextStyle(
-                                    color: item.isFinished
-                                        ? Colors.grey
-                                        : Colors.black,
-                                    decoration: item.isFinished
-                                        ? TextDecoration.lineThrough
-                                        : TextDecoration.none),
-                              ),
-                              Text(
-                                '${item.quantity} 個',
-                                style: TextStyle(
-                                    color: item.isFinished
-                                        ? Colors.grey
-                                        : Colors.black),
-                              )
-                            ],
-                          ),
-                          subtitle: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 5),
-                                    child: Text(
-                                      item.category != null
-                                          ? item.category!
-                                          : 'カテゴリーなし',
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                  ),
-                                  if (item.shop.isNotEmpty)
-                                    Text(
-                                      item.shop,
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                ],
-                              ),
-                              Text(
-                                '${numberFormatter.format(item.price)} 円',
-                                style: const TextStyle(fontSize: 12),
-                              )
-                            ],
-                          ),
-                          leading: Checkbox(
-                            activeColor: Colors.lightBlueAccent,
-                            value: item.isFinished,
-                            shape: const CircleBorder(),
-                            onChanged: (bool? value) {
-                              setState(() {
-                                item.isFinished = value!;
-                                item.save();
-                              });
-                            },
-                          ),
-                          // },
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-          ),
-        if (items.isEmpty)
-          const Align(
-            alignment: Alignment.topCenter,
-            child: Text('登録がありません。'),
-          )
-      ],
     );
   }
 

@@ -40,7 +40,6 @@ class _ListPageState extends State<ListPage> {
 
   final List<int> quantityList = List.generate(10, (index) => index + 1);
 
-  final numberFormatter = NumberFormat('#,###');
   final dateFormatter = DateFormat('M月d日');
   final DateTime _today = DateTime.now();
   DateTime _selectedDate = DateTime.now();
@@ -72,6 +71,32 @@ class _ListPageState extends State<ListPage> {
       debugPrint('カテゴリー削除エラー: $e');
       return false;
     }
+  }
+
+  Future<void> onTapItemCard(Item item) async {
+    if (item.category != null) {
+      categoryController.text = item.category!;
+    }
+    _selectedDate = item.date;
+    dateController.text = dateFormatter.format(item.date);
+    itemNameController.text = item.name;
+    priceController.text = item.price.toString();
+    itemQuantityController.text = item.quantity.toString();
+    shopController.text = item.shop;
+    await _showModal(item);
+  }
+
+  void itemRemove(String itemId) {
+    setState(() {
+      _items.remove(itemId);
+    });
+  }
+
+  void onChangeCheck(Item item, bool? value) {
+    setState(() {
+      item.isFinished = value!;
+      item.save();
+    });
   }
 
   @override
@@ -149,7 +174,7 @@ class _ListPageState extends State<ListPage> {
                 height: 40,
                 decoration: const BoxDecoration(
                     border: Border(bottom: BorderSide(color: Colors.grey))),
-                child:  Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Expanded(
@@ -167,8 +192,7 @@ class _ListPageState extends State<ListPage> {
                               },
                               child: CategoryTab(
                                   isSelected: _selectCategoryIndex == index,
-                                  name: categoryList[index].name
-                              ),
+                                  name: categoryList[index].name),
                             );
                           }),
                     ),
@@ -176,173 +200,9 @@ class _ListPageState extends State<ListPage> {
                     DeleteCategory(
                         index: _selectCategoryIndex,
                         name: categoryList[_selectCategoryIndex].name,
-                        deleteCategory: deleteCategory
-                    )
+                        deleteCategory: deleteCategory)
                   ],
                 ),
-                // child: Row(
-                //   mainAxisAlignment: MainAxisAlignment.start,
-                //   children: [
-                //     Expanded(
-                //       child: ListView.builder(
-                //           // shrinkWrap: true,
-                //           scrollDirection: Axis.horizontal,
-                //           itemCount: categoryList.length,
-                //           itemBuilder: (context, index) {
-                //             return categoryTab(index, categoryList[index].name);
-                //           }),
-                //     ),
-                //     Padding(
-                //       padding: const EdgeInsets.only(right: 10),
-                //       child: InkWell(
-                //         borderRadius: BorderRadius.circular(50),
-                //         onTap: () async {
-                //           await showModalBottomSheet(
-                //               backgroundColor: Colors.white,
-                //               isScrollControlled: true,
-                //               context: context,
-                //               builder: (BuildContext context) {
-                //                 return Container(
-                //                   height: 500,
-                //                   padding: const EdgeInsets.all(20),
-                //                   child: Column(
-                //                     crossAxisAlignment:
-                //                         CrossAxisAlignment.center,
-                //                     children: [
-                //                       Row(
-                //                         mainAxisAlignment:
-                //                             MainAxisAlignment.spaceBetween,
-                //                         children: [
-                //                           const Text('カテゴリー追加',
-                //                               style: TextStyle(
-                //                                   fontWeight: FontWeight.bold,
-                //                                   fontSize: 20)),
-                //                           Align(
-                //                             alignment: Alignment.centerRight,
-                //                             child: InkWell(
-                //                               borderRadius:
-                //                                   BorderRadius.circular(50),
-                //                               onTap: () {
-                //                                 Navigator.pop(context);
-                //                               },
-                //                               child: const Icon(
-                //                                 Icons.close,
-                //                                 color: Colors.grey,
-                //                                 size: 40,
-                //                               ),
-                //                             ),
-                //                           ),
-                //                         ],
-                //                       ),
-                //                       Padding(
-                //                         padding: const EdgeInsets.symmetric(
-                //                             vertical: 20, horizontal: 30),
-                //                         child: Column(
-                //                           children: [
-                //                             TextField(
-                //                               controller: categoryController,
-                //                               decoration: const InputDecoration(
-                //                                 labelText: 'カテゴリー名入力',
-                //                                 // hintText: 'カテゴリーを追加'
-                //                               ),
-                //                             ),
-                //                             Container(
-                //                               padding: const EdgeInsets.only(
-                //                                   top: 20),
-                //                               alignment: Alignment.centerRight,
-                //                               child: PrimaryButton(
-                //                                 onPressed: () async {
-                //                                   if (categoryController
-                //                                       .text.isNotEmpty) {
-                //                                     // save category
-                //                                     final id =
-                //                                         CategoryLocalStore
-                //                                             .categoryCollection
-                //                                             .doc()
-                //                                             .id;
-                //                                     ItemCategory newCategory =
-                //                                         ItemCategory(
-                //                                             id: id,
-                //                                             name:
-                //                                                 categoryController
-                //                                                     .text);
-                //                                     await newCategory.save();
-                //                                   }
-                //                                   if (!context.mounted) return;
-                //                                   Navigator.pop(context);
-                //                                 },
-                //                                 children: '登録',
-                //                               ),
-                //                             )
-                //                           ],
-                //                         ),
-                //                       ),
-                //                     ],
-                //                   ),
-                //                 );
-                //               });
-                //         },
-                //         child: const Icon(
-                //           Icons.add,
-                //           size: 30,
-                //         ),
-                //       ),
-                //     ),
-                //     InkWell(
-                //         borderRadius: BorderRadius.circular(50),
-                //         onTap: () {
-                //           if (_selectCategoryIndex > 0) {
-                //             showDialog(
-                //                 context: context,
-                //                 builder: (BuildContext context) {
-                //                   return CupertinoAlertDialog(
-                //                     title: const Text(
-                //                       'このカテゴリーを削除しますか？',
-                //                       style: TextStyle(fontSize: 14),
-                //                     ),
-                //                     content: Text(
-                //                       '【${categoryList[_selectCategoryIndex].name}】が削除されますが、登録されているアイテムは削除されません。',
-                //                       style: const TextStyle(fontSize: 14),
-                //                     ),
-                //                     actions: [
-                //                       CupertinoDialogAction(
-                //                         isDestructiveAction: true,
-                //                         onPressed: () {
-                //                           Navigator.pop(context);
-                //                         },
-                //                         child: const Text('キャンセル'),
-                //                       ),
-                //                       CupertinoDialogAction(
-                //                         child: const Text('OK'),
-                //                         onPressed: () async {
-                //                           var result = await deleteCategory();
-                //                           if (result == true) {
-                //                             if (!context.mounted) return;
-                //                             Navigator.pop(context);
-                //                           } else {
-                //                             if (!context.mounted) return;
-                //                             ScaffoldMessenger.of(context)
-                //                                 .showSnackBar(const SnackBar(
-                //                                     content: Text(
-                //                                         'エラーがあり削除できませんでした。')));
-                //                           }
-                //                         },
-                //                       ),
-                //                     ],
-                //                   );
-                //                 });
-                //           }
-                //         },
-                //         child: Icon(
-                //           Icons.delete_forever,
-                //           color: _selectCategoryIndex == 0
-                //               ? Colors.grey[400]
-                //               : Colors.grey[700],
-                //           size: 30,
-                //         )),
-                //   ],
-                // ),
-
               ),
               Padding(
                 padding:
@@ -373,12 +233,12 @@ class _ListPageState extends State<ListPage> {
                                         searchDate = date;
                                       });
                                     }
+
                                     FocusScope.of(context)
                                         .requestFocus(FocusNode());
                                     WidgetUtils.showDatePicker(
                                         context, onConfirm, _today);
                                   },
-
                                 ),
                                 Padding(
                                   padding:
@@ -430,7 +290,13 @@ class _ListPageState extends State<ListPage> {
                     children: List.generate(categoryList.length, (index) {
                       String? categoryName =
                           index > 0 ? categoryList[index].name : null;
-                      return itemListView(categoryName);
+                      return WidgetUtils.itemListView(
+                          _items,
+                          categoryName,
+                          itemRemove,
+                          onTapItemCard,
+                          onChangeCheck
+                      );
                     })),
               ),
             ],
@@ -449,180 +315,6 @@ class _ListPageState extends State<ListPage> {
           await _showModal(null);
         },
         child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  Widget categoryTab(int index, String categoryName) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(50),
-      onTap: () {
-        setState(() {
-          _selectCategoryIndex = index;
-        });
-      },
-      child: Container(
-          // width: 100,
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-              // border: Border(bottom: BorderSide(color: _selectCategoryIndex == index ? Colors.blue: Colors.grey))
-              border: Border(
-                  bottom: _selectCategoryIndex == index
-                      ? const BorderSide(color: Colors.blue)
-                      : BorderSide.none)),
-          child: Text(
-            categoryName,
-            style: TextStyle(
-              color: _selectCategoryIndex == index ? Colors.blue : Colors.black,
-            ),
-          )),
-    );
-  }
-
-  Widget itemListView(String? categoryName) {
-    List<Item> items = [];
-    if (categoryName != null) {
-      final filter =
-          _items.values.where((item) => item.category == categoryName).toList();
-      items = filter;
-    } else {
-      final filter = _items.values.toList();
-      items = filter;
-    }
-    items.sort((a, b) => a.date.isBefore(b.date) ? 1 : -1);
-    return Padding(
-      padding: const EdgeInsets.all(10),
-      child: Column(
-        children: [
-          if (items.isNotEmpty)
-            Expanded(
-              child: ListView.builder(
-                  // shrinkWrap: true,
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    return Dismissible(
-                      onDismissed: (DismissDirection direction) async {
-                        if (direction == DismissDirection.startToEnd) {
-                          item.isDeleted = true;
-                          // TODO: delete
-                          var result = await item.save();
-                          if (result == true) {
-                            setState(() {
-                              _items.remove(item.id);
-                            });
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('削除しました。')));
-                          }
-                        }
-                        debugPrint('dismissed');
-                      },
-                      direction: item.isFinished
-                          ? DismissDirection.startToEnd
-                          : DismissDirection.none,
-                      key: UniqueKey(),
-                      background: Container(
-                        alignment: Alignment.centerLeft,
-                        child: const Icon(Icons.delete),
-                      ),
-                      child: InkWell(
-                        onTap: () async {
-                          if (item.category != null) {
-                            categoryController.text = item.category!;
-                          }
-                          _selectedDate = item.date;
-                          dateController.text = dateFormatter.format(item.date);
-                          itemNameController.text = item.name;
-                          priceController.text = item.price.toString();
-                          itemQuantityController.text =
-                              item.quantity.toString();
-                          shopController.text = item.shop;
-                          await _showModal(item);
-                        },
-                        child: Card(
-                          // margin: const EdgeInsets.symmetric(vertical: 5),
-                          color: Colors.white,
-                          child: ListTile(
-                            // activeColor: Colors.blue,
-                            title: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  item.name,
-                                  style: TextStyle(
-                                      color: item.isFinished
-                                          ? Colors.grey
-                                          : Colors.black,
-                                      decoration: item.isFinished
-                                          ? TextDecoration.lineThrough
-                                          : TextDecoration.none),
-                                ),
-                                Text(
-                                  '${item.quantity} 個',
-                                  style: TextStyle(
-                                      color: item.isFinished
-                                          ? Colors.grey
-                                          : Colors.black),
-                                )
-                              ],
-                            ),
-                            subtitle: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 5),
-                                      child:
-                                          Text(dateFormatter.format(item.date)),
-                                    ),
-                                    Padding(
-                                          padding:
-                                              const EdgeInsets.only(right: 5),
-                                          child: Text(
-                                            item.category != null
-                                                ? item.category!
-                                                : 'カテゴリーなし',
-                                            style:
-                                                const TextStyle(fontSize: 12),
-                                          )),
-                                    if (item.shop.isNotEmpty)
-                                    Text(
-                                      item.shop,
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                  ],
-                                ),
-                                Text(
-                                  '${numberFormatter.format(item.price)} 円',
-                                  style: const TextStyle(fontSize: 12),
-                                )
-                              ],
-                            ),
-                            leading: Checkbox(
-                              activeColor: Colors.lightBlueAccent,
-                              value: item.isFinished,
-                              shape: const CircleBorder(),
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  item.isFinished = value!;
-                                  item.save();
-                                });
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-            ),
-          if (items.isEmpty)
-            const Align(
-              alignment: Alignment.topCenter,
-              child: Text('登録がありません。'),
-            )
-        ],
       ),
     );
   }

@@ -8,6 +8,7 @@ import 'package:kauno/util/localstore/category_localstore.dart';
 
 class WidgetUtils {
    static final numberFormatter = NumberFormat('#,###');
+   static final _today = DateTime.now();
 
   static AppBar createAppBar(String title) {
     return AppBar(
@@ -22,14 +23,14 @@ class WidgetUtils {
     );
   }
 
-  static Row modalHeader(String title, GestureTapCallback? onTap) {
+  static Row modalHeader(String title, Function onTap) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
         InkWell(
-          onTap: onTap,
+          onTap: () {onTap();},
           child: const Icon(
             Icons.close,
             color: Colors.grey,
@@ -41,13 +42,13 @@ class WidgetUtils {
   }
 
   static Future<DateTime?> showDatePicker(
-      BuildContext context, DateChangedCallback? onConfirm, DateTime today) {
+      BuildContext context, DateChangedCallback? onConfirm) {
     return DatePicker.showDatePicker(
         locale: LocaleType.jp,
         context,
         showTitleActions: true,
-        minTime: DateTime(today.year, today.month - 3, 1),
-        maxTime: DateTime(today.year, today.month + 3, 0),
+        minTime: DateTime(_today.year, _today.month - 3, 1),
+        maxTime: DateTime(_today.year, _today.month + 3, 0),
         onConfirm: onConfirm);
   }
 
@@ -76,7 +77,7 @@ class WidgetUtils {
   }
 
   static InkWell searchIconAndModal(
-      BuildContext context, GestureTapCallback onTapClose, Widget child) {
+      BuildContext context, Function onTapClose, Widget child) {
     return InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: () {
@@ -345,6 +346,181 @@ class WidgetUtils {
         ],
       ),
     );
+  }
+  
+  static Future showAddItemModal(
+      BuildContext context,
+      Function onTapClose,
+      void Function(DateTime date) onConfirm,
+      TextEditingController dateController,
+      TextEditingController categoryController,
+      TextEditingController shopController,
+      TextEditingController itemNameController,
+      TextEditingController priceController,
+      TextEditingController itemQuantityController,
+      List<ItemCategory> categoryList,
+      List<int> quantityList,
+      Future<bool>Function(Item?) createItem,
+      Item? item
+      ) async {
+    await showModalBottomSheet(
+        backgroundColor: Colors.white,
+        isScrollControlled: true,
+        context: context,
+        builder: (BuildContext context) {
+          final bottomSpace = MediaQuery.of(context).viewInsets.bottom;
+          return Container(
+            // color: Colors.white,
+            height: MediaQuery.sizeOf(context).height * 0.8 + bottomSpace,
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 30),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                WidgetUtils.modalHeader('商品登録', onTapClose),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
+                      TextField(
+                        controller: dateController,
+                        decoration: const InputDecoration(label: Text('日付')),
+                        onTap: () {
+                          FocusScope.of(context).requestFocus(FocusNode());
+                          WidgetUtils.showDatePicker(
+                              context, onConfirm,);
+                        },
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: categoryController.text.isNotEmpty
+                            ? DropdownButtonFormField(
+                                disabledHint: const Text(
+                                  '選べるカテゴリーがありません',
+                                  style: TextStyle(fontSize: 14),
+                                ),
+                                decoration:
+                                    const InputDecoration(labelText: 'カテゴリー'),
+                                items: categoryList
+                                    .where((category) => category.name != 'すべて')
+                                    .map<DropdownMenuItem<String>>(
+                                        (ItemCategory value) {
+                                  return DropdownMenuItem(
+                                      value: value.name,
+                                      child: Text(value.name));
+                                }).toList(),
+                                value: categoryController.text,
+                                // value: categoryList[0],
+                                // value: categoryList.firstWhere((category) => category.name == categoryController.text, orElse: () => null),
+                                onChanged: (String? value) {
+                                  if (value != null) {
+                                    categoryController.text = value;
+                                  }
+                                })
+                            : DropdownButtonFormField(
+                                disabledHint: const Text(
+                                  '選べるカテゴリーがありません',
+                                  style: TextStyle(fontSize: 14),
+                                ),
+                                decoration:
+                                    const InputDecoration(labelText: 'カテゴリー'),
+                                items: categoryList
+                                    .where((category) => category.name != 'すべて')
+                                    .map<DropdownMenuItem<String>>(
+                                        (ItemCategory value) {
+                                  return DropdownMenuItem(
+                                      value: value.name,
+                                      child: Text(value.name));
+                                }).toList(),
+                                onChanged: (String? value) {
+                                  if (value != null) {
+                                    categoryController.text = value;
+                                  }
+                                }),
+                      ),
+                      TextField(
+                        keyboardType: TextInputType.text,
+                        controller: shopController,
+                        decoration: const InputDecoration(labelText: '店舗'),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: TextField(
+                          keyboardType: TextInputType.text,
+                          controller: itemNameController,
+                          decoration: const InputDecoration(labelText: '商品名'),
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 10),
+                              child: TextField(
+                                controller: priceController,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                    labelText: '価格', suffix: Text('円')),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 100,
+                            child: DropdownButtonFormField(
+                                decoration: const InputDecoration(
+                                  labelText: '個数',
+                                  suffix: Text('個'),
+                                ),
+                                items: quantityList
+                                    .map<DropdownMenuItem<int>>((int value) {
+                                  return DropdownMenuItem<int>(
+                                      value: value,
+                                      child: Text(value.toString()));
+                                }).toList(),
+                                value: int.parse(itemQuantityController.text),
+                                onChanged: (int? value) {
+                                  itemQuantityController.text =
+                                      value.toString();
+                                }),
+                          )
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // if (bottomSpace == 0)
+                Container(
+                    alignment: Alignment.bottomRight,
+                    padding: const EdgeInsets.all(20),
+                    child: PrimaryButton(
+                      onPressed: () async {
+                        if (itemNameController.text.isNotEmpty &&
+                            itemQuantityController.text.isNotEmpty) {
+                          var result = await createItem(item);
+                          if (result == true) {
+                            if (!context.mounted) return;
+                            itemNameController.clear();
+                              priceController.clear();
+                              shopController.clear();
+                          } else {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('リストの登録に失敗しました。')));
+                          }
+                        }
+                        if (!context.mounted) return;
+                        Navigator.pop(context);
+                      },
+                      children: '登録',
+                    ))
+              ],
+            ),
+          );
+        });
   }
 
 }

@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:cell_calendar/cell_calendar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_datetime_picker_plus/flutter_datetime_picker_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:kauno/model/item.dart';
 import 'package:kauno/util/localstore/item_localstore.dart';
+import 'package:kauno/util/widget_utils.dart';
 import 'package:kauno/view/calendar/detail_page.dart';
 
 class CalendarPage extends StatefulWidget {
@@ -20,6 +20,8 @@ class _CalendarPageState extends State<CalendarPage> {
 
   final _today = DateTime.now();
   final dateFormatter = DateFormat('M月d日');
+
+  final numberFormatter = NumberFormat('#,###');
 
   List<CalendarEvent> events = [];
   List<Item> items = [];
@@ -37,6 +39,14 @@ class _CalendarPageState extends State<CalendarPage> {
           eventBackgroundColor: value.isFinished ? Colors.grey : Colors.cyan));
     });
     return events;
+  }
+
+  String getTotalPrice(List<Item> items) {
+    int totalPrice = 0;
+    for (var item in items) {
+      totalPrice += (item.price * item.quantity);
+    }
+    return numberFormatter.format(totalPrice);
   }
 
   @override
@@ -74,7 +84,7 @@ class _CalendarPageState extends State<CalendarPage> {
         child: CellCalendar(
           events: createEvents(),
           onCellTapped: (DateTime date) {
-            final itemsOnTheDate = _items.values.where((item) {
+            final List<Item> itemsOnTheDate = _items.values.where((item) {
               final itemDate = item.date;
               return itemDate.year == date.year &&
                   itemDate.month == date.month &&
@@ -89,6 +99,9 @@ class _CalendarPageState extends State<CalendarPage> {
                       backgroundColor: Colors.white,
                       content: StatefulBuilder(
                         builder: (context, setState) {
+                          void onTapClose() {
+                            Navigator.pop(context);
+                          }
                           return SizedBox(
                             height: MediaQuery.sizeOf(context).height * 0.7,
                             width: double.maxFinite,
@@ -125,21 +138,25 @@ class _CalendarPageState extends State<CalendarPage> {
                                               ))
                                         ],
                                       ),
-                                      Align(
-                                          alignment: Alignment.topRight,
-                                          child: InkWell(
-                                              borderRadius:
-                                                  BorderRadius.circular(50),
-                                              onTap: () {
-                                                Navigator.pop(context);
-                                              },
-                                              child: const Icon(
-                                                Icons.close,
-                                                color: Colors.grey,
-                                                size: 28,
-                                              ))),
+                                      WidgetUtils.closeIcon(
+                                        onTapClose,
+                                        28
+                                      )
                                     ],
                                   ),
+                                ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    const Text('合計金額'),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                                      child: Text(
+                                          getTotalPrice(itemsOnTheDate)
+                                      ),
+                                    ),
+                                    const Text('円')
+                                  ],
                                 ),
                                 Expanded(
                                   child: ListView.builder(
@@ -159,16 +176,54 @@ class _CalendarPageState extends State<CalendarPage> {
                                           child: Card(
                                             color: Colors.white,
                                             child: ListTile(
-                                              title: Text(
-                                                item.name,
-                                                style: TextStyle(
-                                                    color: item.isFinished
-                                                        ? Colors.grey
-                                                        : Colors.black,
-                                                    decoration: item.isFinished
-                                                        ? TextDecoration
-                                                            .lineThrough
-                                                        : TextDecoration.none),
+                                              title: Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Text(
+                                                    item.name,
+                                                    style: TextStyle(
+                                                        color: item.isFinished
+                                                            ? Colors.grey
+                                                            : Colors.black,
+                                                        decoration: item.isFinished
+                                                            ? TextDecoration
+                                                                .lineThrough
+                                                            : TextDecoration.none),
+                                                  ),
+                                                  Row(
+                                                    mainAxisAlignment: MainAxisAlignment.end,
+                                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                                    children: [
+                                                      Text(
+                                                        '${numberFormatter.format(item.price)}円',
+                                                        style: TextStyle(
+                                                            fontSize: 12,
+                                                          color: item.isFinished
+                                                            ? Colors.grey
+                                                            : Colors.black,
+                                                        )
+                                                      ),
+                                                      Text(
+                                                        '×',
+                                                        style: TextStyle(
+                                                            fontSize: 12,
+                                                          color: item.isFinished
+                                                            ? Colors.grey
+                                                            : Colors.black,
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        '${item.quantity}',
+                                                        style: TextStyle(
+                                                            fontSize: 12,
+                                                          color: item.isFinished
+                                                            ? Colors.grey
+                                                            : Colors.black,
+                                                        )
+                                                      )
+                                                    ],
+                                                  )
+                                                ],
                                               ),
                                               leading: Checkbox(
                                                 activeColor:
@@ -243,83 +298,8 @@ class _CalendarPageState extends State<CalendarPage> {
           },
         ),
       ),
-      // floatingActionButton: FloatingActionButton(
-      //   backgroundColor: Colors.indigoAccent,
-      //   foregroundColor: Colors.white,
-      //   onPressed: () async {
-      //     await _showAddModal();
-      //     // Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const Screen(index: 0,)));
-      //   },
-      //   child: const Icon(Icons.add),
-      // ),
     );
   }
-
-  // Future _showAddModal() async {
-  //   await showModalBottomSheet(
-  //     backgroundColor: Colors.white,
-  //       isScrollControlled: true,
-  //       context: context,
-  //       builder: (BuildContext context) {
-  //         return Container(
-  //           height: MediaQuery.sizeOf(context).height * 0.9,
-  //           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 30),
-  //           child: Column(
-  //             crossAxisAlignment: CrossAxisAlignment.center,
-  //             children: [
-  //               Row(
-  //                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                 children: [
-  //                   const Text(
-  //                     '商品登録',
-  //                     style:
-  //                         TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-  //                   ),
-  //                   InkWell(
-  //                     onTap: () {
-  //                       Navigator.pop(context);
-  //                     },
-  //                     child: const Icon(
-  //                       Icons.close,
-  //                       color: Colors.grey,
-  //                       size: 40,
-  //                     ),
-  //                   )
-  //                 ],
-  //               ),
-  //               Padding(
-  //                 padding: const EdgeInsets.all(20),
-  //                 child: ListView(
-  //                   shrinkWrap: true,
-  //                   children: [
-  //                     // Text(dateFormatter.format(_today), style: TextStyle(fontSize: 20),)
-  //                     TextField(
-  //                       controller: dateController,
-  //                       decoration: const InputDecoration(label: Text('日付')),
-  //                       onTap: () {
-  //                         FocusScope.of(context).requestFocus(FocusNode());
-  //                         DatePicker.showDatePicker(
-  //                             locale: LocaleType.jp,
-  //                             context,
-  //                             showTitleActions: true,
-  //                             minTime: DateTime(_today.year, _today.month, 1),
-  //                             maxTime:
-  //                                 DateTime(_today.year, _today.month + 1, 0),
-  //                             onConfirm: (DateTime date) {
-  //                           setState(() {
-  //                             dateController.text = dateFormatter.format(date);
-  //                           });
-  //                         });
-  //                       },
-  //                     ),
-  //                   ],
-  //                 ),
-  //               )
-  //             ],
-  //           ),
-  //         );
-  //       });
-  // }
 
   @override
   void dispose() {

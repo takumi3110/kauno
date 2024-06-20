@@ -23,20 +23,21 @@ class WidgetUtils {
     );
   }
 
+  static InkWell closeIcon(Function onTap, double size) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(50),
+      onTap: () => onTap(),
+      child: Icon(Icons.close, color: Colors.grey, size: size,),
+    );
+  }
+
   static Row modalHeader(String title, Function onTap) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-        InkWell(
-          onTap: () {onTap();},
-          child: const Icon(
-            Icons.close,
-            color: Colors.grey,
-            size: 40,
-          ),
-        ),
+        closeIcon(onTap, 40)
       ],
     );
   }
@@ -210,7 +211,7 @@ class WidgetUtils {
     }
     itemList.sort((a, b) => a.date.isBefore(b.date) ? 1 : -1);
     return Padding(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Column(
         children: [
           if (itemList.isNotEmpty)
@@ -224,7 +225,7 @@ class WidgetUtils {
                       onDismissed: (DismissDirection direction) async {
                         if (direction == DismissDirection.startToEnd) {
                           item.isDeleted = true;
-                          // TODO: delete
+                          // delete
                           var result = await item.save();
                           if (result == true) {
                             // setState(() {

@@ -131,6 +131,31 @@ class _ListPageState extends State<ListPage> {
     shopController.clear();
 }
 
+void onTapSearchDate() {
+      searchDateController.clear();
+      setState(() {
+        searchDate = null;
+        _items.addAll(_defaultItems);
+        if (searchShopController.text.isNotEmpty) {
+          _items.removeWhere(
+              (key, value) => value.shop != searchShopController.text);
+        }
+      });
+      // searchDate = null;
+    }
+
+    void onTapSearchShop() {
+      searchShopController.clear();
+      setState(() {
+        _items.addAll(_defaultItems);
+        if (searchDate != null) {
+          _items.removeWhere((key, value) =>
+              dateFormatter.format(value.date) !=
+              dateFormatter.format(searchDate!));
+        }
+      });
+    }
+
   @override
   void initState() {
     _itemSubscription = ItemLocalStore.itemCollection.stream
@@ -161,36 +186,12 @@ class _ListPageState extends State<ListPage> {
 
   @override
   Widget build(BuildContext context) {
-    onTapSearchDate() {
-      searchDateController.clear();
-      setState(() {
-        searchDate = null;
-        _items.addAll(_defaultItems);
-        if (searchShopController.text.isNotEmpty) {
-          _items.removeWhere(
-              (key, value) => value.shop != searchShopController.text);
-        }
-      });
-      // searchDate = null;
-    }
-
-    onTapSearchShop() {
-      searchShopController.clear();
-      setState(() {
-        _items.addAll(_defaultItems);
-        if (searchDate != null) {
-          _items.removeWhere((key, value) =>
-              dateFormatter.format(value.date) !=
-              dateFormatter.format(searchDate!));
-        }
-      });
-    }
-
     void onTapSearchClose() {
       setState(() {
         searchDate = null;
       });
       searchDateController.clear();
+      searchShopController.clear();
       Navigator.pop(context);
     }
 

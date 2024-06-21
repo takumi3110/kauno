@@ -8,9 +8,12 @@ jobs:
     name: Check source code
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-actions@v2.3.0
+      - name: Clone repository
+        uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
+          channel: stable
           flutter-version: '3.22.2'
       - name: Install packages
         run: flutter pub get

@@ -9,7 +9,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/fluter-actions@v2.3.0
+      - uses: subosito/flutter-actions@v2.3.0
         with:
           flutter-version: '3.22.2'
       - name: Install packages

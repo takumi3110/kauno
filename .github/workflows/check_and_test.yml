@@ -6,7 +6,7 @@ on:
 jobs:
   test:
     name: Check source code
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Clone repository
         uses: actions/checkout@v4

@@ -44,6 +44,8 @@ dependencies:
   localstore: ^1.4.0
   cell_calendar: ^0.8.0
   provider: ^6.1.2
+  path_provider_platform_interface: ^2.1.2
+  plugin_platform_interface: ^2.1.8
 
 dev_dependencies:
   flutter_test:

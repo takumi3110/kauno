@@ -32,10 +32,7 @@ jobs:
       - name: Create ipa file
         run: flutter build ipa --export-options-plist=ExportOptions.plist
 
-      - name: Confirm position
-        run: |
-          pwd
-          ls
-          ls ./build/ios/ipa
+      - name: Confirm ipa file
+        run: ls build/ios/ipa
       - name: Upload to AppStoreConnect
-        run: xcrun altool --upload-app -f "./build/ios/ipa/kauno.ipa" -t ios -u "${{ secrets.APPLE_ID }}" -p "${{secrets.APPLE_APP_PASS }}"
+        run: xcrun altool --upload-app -f "build/ios/ipa/kauno.ipa" -t ios -u "${{ secrets.APPLE_ID }}" -p "${{secrets.APPLE_APP_PASS }}"

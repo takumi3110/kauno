@@ -30,7 +30,7 @@ jobs:
           p12-password: ${{secrets.CERTIFICATE_PASSWORD}}
 
       - name: Create ipa file
-        run: flutter build ipa --export-options-plist=ExportOptions.plist --build-number ${{GITHUB_RUN_NUMBER}}
+        run: flutter build ipa --export-options-plist=ExportOptions.plist
 
       - name: Upload to AppStoreConnect
         run: xcrun altool --upload-app -f "./build/ios/ipa/kauno.ipa" -u "${{ secrets.APPLE_ID }}" -p "${{secrets.APPLE_APP_PASS }}"

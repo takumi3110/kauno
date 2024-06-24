@@ -30,7 +30,7 @@ jobs:
           p12-password: ${{secrets.CERTIFICATE_PASSWORD}}
 
       - name: Create ipa file
-        run: flutter build ipa --export-options-plist=ExportOptions.plist
+        run: flutter build ipa --export-options-plist=ExportOptions.plist --build-number ${GITHUB_RUN_NUMBER}
 
       - name: Confirm ipa file
         run: ls ./build/ios

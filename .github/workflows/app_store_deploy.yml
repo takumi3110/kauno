@@ -33,6 +33,8 @@ jobs:
         run: flutter build ipa --export-options-plist=ExportOptions.plist
 
       - name: Confirm ipa file
-        run: ls build/ios/ipa
+        run: |
+          ls
+          ls build/ios
       - name: Upload to AppStoreConnect
         run: xcrun altool --upload-app -f "build/ios/ipa/kauno.ipa" -t ios -u "${{ secrets.APPLE_ID }}" -p "${{secrets.APPLE_APP_PASS }}"

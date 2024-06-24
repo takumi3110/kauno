@@ -1,0 +1,36 @@
+name: App store connect deploy CI
+on:
+  pull_request:
+    branches:
+      - release
+jobs:
+  build_iOS:
+    name: Build for iOS
+    runs-on: macos-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.22.2'
+      - name: Install package
+        run: flutter pub get
+#      証明書の作成
+      - name: Import Provisioning Profile
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo -n ${{secrets.PROVISIONING_PROFILE}} | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/kauno_distribution.mobileprovision
+#      署名をする
+      - name: Import CodeSigning Certificates
+        uses: Apple-Actions/import-codesign-certs@v1
+        with:
+          p12-file-base64: ${{secrets.CERTIFICATES_P12}}
+          p12-password: ${{secrets.CERTIFICATE_PASSWORD}}
+
+      - name: Create ipa file
+        run: flutter build ipa --export-options-plist=ExportOptions.plist --build-number ${{GITHUB_RUN_NUMBER}}
+
+      - name: Upload to AppStoreConnect
+        run: xcrun altool --upload-app -f "./build/ios/ipa/kauno.ipa" -u "${{ secrets.APPLE_ID }}" -p "${{secrets.APPLE_APP_PASS }}"

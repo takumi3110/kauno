@@ -24,13 +24,15 @@ jobs:
           echo -n ${{secrets.PROVISIONING_PROFILE}} | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/kauno_distribution.mobileprovision
 #      署名をする
       - name: Import CodeSigning Certificates
-        uses: Apple-Actions/import-codesign-certs@v1
+        uses: Apple-Actions/import-codesign-certs@v3
         with:
           p12-file-base64: ${{secrets.CERTIFICATES_P12}}
           p12-password: ${{secrets.CERTIFICATE_PASSWORD}}
 
       - name: Create ipa file
-        run: flutter build ipa --export-options-plist=ExportOptions.plist --build-number ${{GITHUB_RUN_NUMBER}}
+        run: flutter build ipa --export-options-plist=ExportOptions.plist --build-number ${GITHUB_RUN_NUMBER}
 
+      - name: Confirm ipa file
+        run: ls ./build/ios
       - name: Upload to AppStoreConnect
-        run: xcrun altool --upload-app -f "./build/ios/ipa/kauno.ipa" -u "${{ secrets.APPLE_ID }}" -p "${{secrets.APPLE_APP_PASS }}"
+        run: xcrun altool --upload-app -f "./build/ios/ipa/kauno.ipa" -t ios -u "${{ secrets.APPLE_ID }}" -p "${{secrets.APPLE_APP_PASS }}"
